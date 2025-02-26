@@ -1,0 +1,78 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--surface-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  padding: 0 20px;
+}
+
+.navbar-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.navbar-links li {
+  margin-left: 1.5rem;
+}
+
+.navbar-links a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.navbar-links a:hover {
+  color: var(--primary-color);
+}
+
+.btn-logout {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.btn-logout:hover {
+  color: var(--primary-color);
+}
+
+.btn-register {
+  background-color: var(--primary-color);
+  color: white !important;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-register:hover {
+  background-color: var(--primary-dark);
+}
+
+@media (max-width: 768px) {
+  .navbar-links {
+    display: none;
+  }
+  
+  /* You would add mobile menu toggle functionality in a real app */
+}

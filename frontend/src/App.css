@@ -1,0 +1,26 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-container {
+  display: flex;
+  flex: 1;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  padding-top: 80px; /* Account for fixed navbar */
+}
+
+.content.with-sidebar {
+  margin-left: 250px; /* Width of the sidebar */
+}
+
+@media (max-width: 768px) {
+  .content.with-sidebar {
+    margin-left: 0;
+  }
+}
