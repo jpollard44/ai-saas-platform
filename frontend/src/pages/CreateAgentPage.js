@@ -24,14 +24,11 @@ const CreateAgentPage = () => {
   const navigate = useNavigate();
   const isMounted = useRef(true);
   
-  // Add useEffect for cleanup
+  // Set up cleanup when component unmounts
   useEffect(() => {
-    // Set isMounted to true when component mounts
-    isMounted.current = true;
-    
-    // Return cleanup function
     return () => {
       isMounted.current = false;
+      console.log('CreateAgentPage unmounted');
     };
   }, []);
 
@@ -213,32 +210,60 @@ const CreateAgentPage = () => {
               
               // Check if data and _id exist before navigating
               if (response.data.data && response.data.data._id) {
-                navigate(`/agents/${response.data.data._id}`);
+                console.log('Navigating to agent details page:', response.data.data._id);
+                // Use setTimeout to ensure the navigation happens after the current execution context
+                setTimeout(() => {
+                  if (isMounted.current) {
+                    console.log('Component is still mounted, navigating to agent details page');
+                    navigate(`/agents/${response.data.data._id}`);
+                  } else {
+                    console.log('Component unmounted, skipping navigation');
+                  }
+                }, 100);
               } else {
                 // If _id is missing, navigate to the agents list
+                console.log('Agent ID not found in response, navigating to agents list');
                 toast.info('Agent created but details not available. Redirecting to agents list.');
-                navigate('/agents');
+                // Use setTimeout to ensure the navigation happens after the current execution context
+                setTimeout(() => {
+                  if (isMounted.current) {
+                    console.log('Component is still mounted, navigating to agents list');
+                    navigate('/agents');
+                  } else {
+                    console.log('Component unmounted, skipping navigation');
+                  }
+                }, 100);
               }
             } else {
               // Handle error in response
-              toast.error(response.data.error || 'Failed to create agent');
-              setIsSubmitting(false);
+              console.error('Error in response:', response.data.error);
+              if (isMounted.current) {
+                toast.error(response.data.error || 'Failed to create agent');
+                setIsSubmitting(false);
+              }
             }
           } else {
             // Handle empty response
-            toast.error('No response received from server');
-            setIsSubmitting(false);
+            console.error('Empty response received');
+            if (isMounted.current) {
+              toast.error('No response received from server');
+              setIsSubmitting(false);
+            }
           }
         } catch (error) {
           console.error('Error creating agent:', error);
-          toast.error(error.message || 'Failed to create agent');
-          setIsSubmitting(false);
+          if (isMounted.current) {
+            toast.error(error.message || 'Failed to create agent');
+            setIsSubmitting(false);
+          }
         }
       }
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-      toast.error(error.message || 'An unexpected error occurred');
-      setIsSubmitting(false);
+      if (isMounted.current) {
+        toast.error(error.message || 'An unexpected error occurred');
+        setIsSubmitting(false);
+      }
     }
   };
 
