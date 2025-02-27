@@ -157,7 +157,7 @@ const CreateAgentPage = () => {
     window.scrollTo(0, 0);
   };
 
-  const handleSubmit = async (event, source) => {
+  const handleSubmit = async (e, source) => {
     try {
       console.log('Form submission initiated by', source);
       
@@ -201,35 +201,35 @@ const CreateAgentPage = () => {
         try {
           const response = await agentService.createAgent(updatedFormData);
             
-          console.log('Agent creation response:', response);
-          console.log('Response data:', response.data);
+          console.log('Agent creation API response:', JSON.stringify(response));
           console.log('Response status:', response.status);
-            
-          // Handle the response
-          if (response && response.status >= 200 && response.status < 300) {
+          console.log('Response data:', JSON.stringify(response.data));
+          
+          if (response && response.data) {
+            console.log('Agent created successfully:', response.data.data._id);
             toast.success('Agent created successfully!');
             
-            // Navigate to agents list after successful creation
-            setTimeout(() => {
-              if (isMounted.current) {
-                console.log('Component is still mounted, navigating to agents list');
-                navigate('/agents');
-              } else {
-                console.log('Component unmounted, skipping navigation');
-              }
-            }, 100);
-          } else {
-            // Handle error in response
-            console.error('Error in response:', response.data?.error);
+            // Only navigate if the component is still mounted
             if (isMounted.current) {
-              toast.error(response.data?.error || 'Failed to create agent');
-              setIsSubmitting(false);
+              console.log('Navigating to dashboard...');
+              navigate('/dashboard');
             }
+          } else {
+            console.error('Empty or invalid response from agent creation API');
+            setSubmitError('Failed to create agent. Please try again.');
           }
         } catch (error) {
           console.error('Error creating agent:', error);
+          
+          if (error.response) {
+            console.error('Error response data:', JSON.stringify(error.response.data));
+            console.error('Error response status:', error.response.status);
+          }
+          
+          setSubmitError(error.response?.data?.error || 'Failed to create agent. Please try again.');
+        } finally {
+          // Only update state if the component is still mounted
           if (isMounted.current) {
-            toast.error(error.message || 'Failed to create agent');
             setIsSubmitting(false);
           }
         }

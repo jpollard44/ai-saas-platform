@@ -9,6 +9,7 @@ const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const mongoSanitize = require('express-mongo-sanitize');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { errorHandler } = require('./middleware/errorMiddleware');
 
@@ -42,10 +43,29 @@ if (process.env.NODE_ENV === 'development') {
 // Enable CORS for development
 if (process.env.NODE_ENV === 'development') {
   app.use(cors());
+  console.log('CORS enabled for all origins (development mode)');
 } else {
   // In production, only allow the frontend origin
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'https://ai-saas-platform-web.onrender.com',
+    'https://ai-saas-platform-web.onrender.com',
+    'https://astro-ai-platform.onrender.com'
+  ];
+  
+  console.log('CORS allowed origins:', allowedOrigins);
+  
   app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://astro-ai-platform.onrender.com',
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true
   }));
 }

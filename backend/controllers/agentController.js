@@ -40,6 +40,36 @@ const upload = multer({
 // @route   POST /api/agents/create
 // @access  Private
 exports.createAgent = async (req, res, next) => {
+  console.log('Create agent request received');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('MONGO_URI:', process.env.MONGO_URI ? 'Set (value hidden for security)' : 'Not set');
+  
+  // Check MongoDB connection status
+  const mongooseState = mongoose.connection.readyState;
+  const connectionStates = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+    4: 'invalid credentials'
+  };
+  console.log(`MongoDB Connection Status: ${connectionStates[mongooseState]} (${mongooseState})`);
+  
+  // If not connected, try to reconnect
+  if (mongooseState !== 1) {
+    console.log('MongoDB not connected, attempting to reconnect...');
+    try {
+      await mongoose.connect(process.env.MONGO_URI);
+      console.log('MongoDB reconnection successful');
+    } catch (error) {
+      console.error('MongoDB reconnection failed:', error.message);
+    }
+    
+    // Check connection status again after reconnection attempt
+    const newMongooseState = mongoose.connection.readyState;
+    console.log(`MongoDB Connection Status after reconnection attempt: ${connectionStates[newMongooseState]} (${newMongooseState})`);
+  }
+  
   try {
     console.log('Creating agent with data:', JSON.stringify(req.body));
     console.log('User ID:', req.user.id);

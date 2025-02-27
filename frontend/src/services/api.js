@@ -2,8 +2,12 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
+  ? process.env.REACT_APP_API_URL || '/api' 
   : 'http://localhost:5001/api';
+
+console.log('API URL configured as:', API_URL);
+console.log('Current NODE_ENV:', process.env.NODE_ENV);
+console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL || 'Not set');
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,13 +19,24 @@ const api = axios.create({
 // Add request interceptor to include auth token in requests
 api.interceptors.request.use(
   (config) => {
+    console.log(`API Request: ${config.method.toUpperCase()} ${config.url}`);
+    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Authorization header added with token');
+    } else {
+      console.log('No token found in localStorage');
     }
+    
+    if (config.data && typeof config.data === 'object') {
+      console.log('Request payload:', JSON.stringify(config.data));
+    }
+    
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -175,11 +190,19 @@ function getMockData(url, method) {
 // Add response interceptor to handle responses
 api.interceptors.response.use(
   (response) => {
+    console.log(`API Response: ${response.status} from ${response.config.url}`);
+    
     // If the response is empty but status is 200/201, create a default success response
     if (response.status >= 200 && response.status < 300 && !response.data) {
       console.log('Empty response detected, creating default response object');
       response.data = { success: true };
     }
+    
+    // Log response data for debugging
+    if (response.data) {
+      console.log('Response data:', JSON.stringify(response.data));
+    }
+    
     return response;
   },
   (error) => {
@@ -190,8 +213,8 @@ api.interceptors.response.use(
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
+      console.error(`Error response status: ${error.response.status} from ${error.config?.url}`);
+      console.error('Error response data:', JSON.stringify(error.response.data));
       
       // Handle authentication errors
       if (error.response.status === 401) {
@@ -206,7 +229,7 @@ api.interceptors.response.use(
       }
     } else if (error.request) {
       // The request was made but no response was received
-      console.error('Error request:', error.request);
+      console.error('Error request - no response received:', error.request);
     } else {
       // Something happened in setting up the request that triggered an Error
       console.error('Error message:', error.message);
@@ -226,7 +249,18 @@ export const userService = {
 
 // Agent API services
 export const agentService = {
-  createAgent: (agentData) => api.post('/agents/create', agentData),
+  createAgent: (agentData) => {
+    console.log('Creating agent with data:', JSON.stringify(agentData));
+    return api.post('/agents/create', agentData)
+      .then(response => {
+        console.log('Agent creation successful:', JSON.stringify(response.data));
+        return response;
+      })
+      .catch(error => {
+        console.error('Agent creation failed:', error);
+        throw error;
+      });
+  },
   getAgents: () => api.get('/agents'),
   getAgent: (agentId) => api.get(`/agents/${agentId}`),
   updateAgent: (agentId, agentData) => api.put(`/agents/${agentId}`, agentData),
