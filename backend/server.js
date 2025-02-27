@@ -10,7 +10,7 @@ const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const mongoSanitize = require('express-mongo-sanitize');
 const connectDB = require('./config/db');
-const errorHandler = require('./middleware/errorMiddleware');
+const { errorHandler } = require('./middleware/errorMiddleware');
 
 // Load env vars
 dotenv.config();
