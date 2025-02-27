@@ -88,6 +88,22 @@ exports.createAgent = async (req, res, next) => {
     if (enableKnowledgeBase !== undefined) agentData.enableKnowledgeBase = enableKnowledgeBase;
     if (enableMemory !== undefined) agentData.enableMemory = enableMemory;
     
+    // Handle pricing data if provided
+    if (req.body.pricing) {
+      console.log('Processing pricing data:', JSON.stringify(req.body.pricing));
+      
+      // Create standardized pricing object
+      const pricingData = req.body.pricing;
+      
+      agentData.pricing = {
+        type: pricingData.type || 'free',
+        amount: pricingData.type === 'free' ? 0 : (parseFloat(pricingData.amount) || 0),
+        currency: pricingData.currency || 'USD'
+      };
+      
+      console.log('Final pricing data:', JSON.stringify(agentData.pricing));
+    }
+    
     // Set visibility with validation
     if (visibility && ['private', 'public', 'marketplace'].includes(visibility)) {
       agentData.visibility = visibility;

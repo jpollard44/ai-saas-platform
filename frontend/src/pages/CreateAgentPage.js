@@ -160,75 +160,85 @@ const CreateAgentPage = () => {
     window.scrollTo(0, 0);
   };
 
-  const handleSubmit = async (e) => {
-    // If an event is passed, prevent default behavior
-    if (e && e.preventDefault) {
-      e.preventDefault();
-    }
-    
-    console.log('Create Agent button clicked');
-    
-    if (isSubmitting) {
-      console.log('Already submitting, ignoring duplicate submission');
-      return;
-    }
-    
-    // Validate the current step before submission
-    if (!validateStep()) {
-      console.log('Final validation failed, not submitting');
-      toast.error('Please fill in all required fields correctly before submitting.');
-      return;
-    }
-    
-    console.log('Form submission initiated by user');
-    setIsSubmitting(true);
-    setSubmitError(null);
-    
+  const handleSubmit = async (event, source) => {
     try {
-      const updatedFormData = {
-        ...formData,
-        pricing: {
-          ...formData.pricing,
-          amount: formData.pricing.type === 'free' ? 0 : formData.pricing.amount
-        }
-      };
+      console.log('Form submission initiated by', source);
       
-      console.log('Submitting agent data:', JSON.stringify(updatedFormData));
+      // If already submitting, don't allow another submission
+      if (isSubmitting) {
+        console.log('Already submitting, ignoring duplicate submission');
+        return;
+      }
       
-      const response = await agentService.createAgent(updatedFormData);
+      // Validate the current step
+      const isValid = validateStep(currentStep);
+      if (!isValid) {
+        console.log(`Step ${currentStep} validation failed`);
+        return;
+      }
       
-      console.log('Agent creation response:', response);
+      // If we're not on the last step, move to the next step
+      if (currentStep < 5) {
+        setCurrentStep(currentStep + 1);
+        return;
+      }
       
-      if (response && response.data && response.data.success) {
-        toast.success('Agent created successfully!');
+      // Only proceed with submission on step 5
+      if (currentStep === 5) {
+        console.log('Form submission initiated by user');
         
-        // Check if data and _id exist before navigating
-        if (response.data.data && response.data.data._id) {
-          navigate(`/agents/${response.data.data._id}`);
-        } else {
-          // If _id is missing, navigate to the agents list
-          toast.info('Agent created but details not available. Redirecting to agents list.');
-          navigate('/agents');
-        }
-      } else {
-        const errorMessage = response?.data?.error || 'Failed to create agent. Please try again.';
-        console.error('Error response:', errorMessage);
-        if (isMounted.current) {
-          setSubmitError(errorMessage);
-          toast.error(errorMessage);
+        // Create a copy of the form data to update
+        const updatedFormData = {
+          ...formData,
+          pricing: {
+            ...formData.pricing,
+            amount: formData.pricing.type === 'free' ? 0 : formData.pricing.amount
+          }
+        };
+        
+        console.log('Submitting agent data:', JSON.stringify(updatedFormData));
+        
+        // Show loading state
+        setIsSubmitting(true);
+        
+        try {
+          const response = await agentService.createAgent(updatedFormData);
+          
+          console.log('Agent creation response:', response);
+          
+          // Handle the response
+          if (response && response.data) {
+            if (response.data.success) {
+              toast.success('Agent created successfully!');
+              
+              // Check if data and _id exist before navigating
+              if (response.data.data && response.data.data._id) {
+                navigate(`/agents/${response.data.data._id}`);
+              } else {
+                // If _id is missing, navigate to the agents list
+                toast.info('Agent created but details not available. Redirecting to agents list.');
+                navigate('/agents');
+              }
+            } else {
+              // Handle error in response
+              toast.error(response.data.error || 'Failed to create agent');
+              setIsSubmitting(false);
+            }
+          } else {
+            // Handle empty response
+            toast.error('No response received from server');
+            setIsSubmitting(false);
+          }
+        } catch (error) {
+          console.error('Error creating agent:', error);
+          toast.error(error.message || 'Failed to create agent');
+          setIsSubmitting(false);
         }
       }
     } catch (error) {
-      console.error('Error creating agent:', error);
-      const errorMessage = error.response?.data?.error || 'An error occurred while creating the agent';
-      if (isMounted.current) {
-        setSubmitError(errorMessage);
-        toast.error(errorMessage);
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsSubmitting(false);
-      }
+      console.error('Error in handleSubmit:', error);
+      toast.error(error.message || 'An unexpected error occurred');
+      setIsSubmitting(false);
     }
   };
 
@@ -297,7 +307,10 @@ const CreateAgentPage = () => {
 
       <div className="create-agent-content">
         {/* Use onSubmit={e => e.preventDefault()} to completely prevent form submission */}
-        <form onSubmit={e => e.preventDefault()} noValidate>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit(e, 'form');
+        }} noValidate>
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
             <div className="form-step">
@@ -668,12 +681,17 @@ const CreateAgentPage = () => {
               <button 
                 type="button" 
                 className="btn btn-primary" 
-                onClick={handleSubmit}
+                onClick={() => handleSubmit(null, 'button')}
                 disabled={isSubmitting}
                 id="create-agent-button"
                 name="create-agent-button"
               >
-                {isSubmitting ? 'Creating Agent...' : 'Create Agent'}
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Creating...
+                  </>
+                ) : 'Create Agent'}
               </button>
             )}
           </div>
