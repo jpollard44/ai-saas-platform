@@ -34,18 +34,20 @@ const upload = multer({
   fileFilter
 });
 
-// @desc    Create a new agent
+// @desc    Create new agent
 // @route   POST /api/agents/create
 // @access  Private
 exports.createAgent = async (req, res, next) => {
   try {
-    const { 
-      name, 
-      description, 
-      modelId, 
-      templateId, 
+    console.log('Creating agent with data:', req.body);
+    
+    const {
+      name,
+      description,
+      modelId,
+      templateId,
       instructions,
-      temperature, 
+      temperature,
       maxTokens,
       enableWebSearch,
       enableKnowledgeBase,
@@ -55,9 +57,10 @@ exports.createAgent = async (req, res, next) => {
 
     // Validate required fields
     if (!name || !description || !modelId || !instructions) {
+      console.log('Validation failed: Missing required fields');
       return res.status(400).json({
         success: false,
-        error: 'Please provide all required fields: name, description, modelId, and instructions'
+        error: 'Please provide name, description, model, and instructions'
       });
     }
 
@@ -112,11 +115,15 @@ exports.createAgent = async (req, res, next) => {
       message: 'Agent created successfully!'
     };
     
-    console.log('Sending response:', responseData);
+    console.log('Sending response:', JSON.stringify(responseData));
     
     return res.status(201).json(responseData);
   } catch (err) {
-    next(err);
+    console.error('Error in createAgent:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'Server Error'
+    });
   }
 };
 

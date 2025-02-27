@@ -26,26 +26,6 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle common errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle token expiration
-    if (error.response && error.response.status === 401) {
-      // Clear token and redirect to login if unauthorized
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    
-    // Handle server errors
-    if (error.response && error.response.status >= 500) {
-      console.error('Server error:', error.response.data);
-    }
-    
-    return Promise.reject(error);
-  }
-);
-
 // Helper function to get mock data based on URL and method
 function getMockData(url, method) {
   // Marketplace listings
@@ -192,7 +172,7 @@ function getMockData(url, method) {
   return [];
 }
 
-// Add response interceptor to handle empty responses
+// Add response interceptor to handle responses
 api.interceptors.response.use(
   (response) => {
     // If the response is empty but status is 200/201, create a default success response
@@ -203,26 +183,21 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor to handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+    // Handle error responses
     console.error('API Error:', error);
     
-    // Check if error is due to server unavailability
-    if (!error.response) {
-      console.log('Using mock data due to server unavailability');
-      // Return mock success response for development when backend is not available
-      return Promise.resolve({
-        data: {
-          success: true,
-          data: getMockData(error.config.url, error.config.method)
-        }
-      });
+    // Check if the error has a response
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Error response data:', error.response.data);
+      console.error('Error response status:', error.response.status);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('Error request:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error message:', error.message);
     }
     
     return Promise.reject(error);
