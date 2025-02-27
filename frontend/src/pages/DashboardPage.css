@@ -294,71 +294,53 @@
 }
 
 /* Quick Actions Section */
-.quick-actions {
-  grid-column: span 2;
+.dashboard-quick-actions {
+  grid-column: span 3;
   background-color: var(--surface-color);
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
 }
 
-.quick-actions h2 {
+.dashboard-quick-actions h2 {
   margin-bottom: 1.5rem;
   color: var(--text-primary);
 }
 
-.actions-grid {
+.action-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
-.action-card {
+.action-button {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
   background-color: var(--background-alt);
-  padding: 1.5rem;
   border-radius: 8px;
-  text-align: center;
   text-decoration: none;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  color: var(--text-primary);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.action-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+.action-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   background-color: var(--primary-color-light);
   color: var(--primary-color);
-  width: 50px;
-  height: 50px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  font-size: 1.5rem;
-}
-
-.action-card h3 {
-  margin: 0 0 0.5rem;
-  color: var(--text-primary);
-}
-
-.action-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-/* Loading State */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 500px;
-  font-size: 1.25rem;
-  color: var(--text-secondary);
+  margin-right: 1rem;
+  font-size: 1.2rem;
 }
 
 /* Responsive */
@@ -368,14 +350,9 @@
   }
   
   .dashboard-stats,
-  .my-agents,
-  .quick-actions {
+  .dashboard-quick-actions,
+  .my-agents {
     grid-column: span 2;
-  }
-  
-  .recent-activity {
-    grid-column: span 2;
-    grid-row: auto;
   }
 }
 
@@ -385,9 +362,8 @@
   }
   
   .dashboard-stats,
-  .my-agents,
-  .recent-activity,
-  .quick-actions {
+  .dashboard-quick-actions,
+  .my-agents {
     grid-column: span 1;
   }
   
@@ -398,4 +374,14 @@
   .stat-value {
     font-size: 2rem;
   }
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 500px;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
 }

@@ -5,13 +5,6 @@ import { agentService, analyticsService } from '../services/api';
 import { toast } from 'react-toastify';
 import './DashboardPage.css';
 
-// Fallback mock data if API call fails
-const mockAgents = [
-  { _id: 1, name: 'Customer Support Bot', deploymentStatus: 'deployed', modelId: 'gpt-3.5-turbo', stats: { usageCount: 1250, averageResponseTime: 920 } },
-  { _id: 2, name: 'Data Analysis Assistant', deploymentStatus: 'draft', modelId: 'gpt-4', stats: { usageCount: 450, averageResponseTime: 1320 } },
-  { _id: 3, name: 'Content Generator', deploymentStatus: 'deployed', modelId: 'claude-2', stats: { usageCount: 820, averageResponseTime: 740 } }
-];
-
 const DashboardPage = () => {
   const [agents, setAgents] = useState([]);
   const [analytics, setAnalytics] = useState({
@@ -30,7 +23,7 @@ const DashboardPage = () => {
         const agentsResponse = await agentService.getAgents();
         const fetchedAgents = agentsResponse.data.data || [];
         
-        setAgents(fetchedAgents.length > 0 ? fetchedAgents : mockAgents);
+        setAgents(fetchedAgents);
         
         // Calculate analytics from agent data
         if (fetchedAgents.length > 0) {
@@ -80,9 +73,8 @@ const DashboardPage = () => {
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        toast.error('Failed to load dashboard data');
-        // Use mock data as fallback
-        setAgents(mockAgents);
+        toast.error('Failed to load dashboard data. Please try again later.');
+        setAgents([]);
       } finally {
         setLoading(false);
       }
@@ -171,6 +163,29 @@ const DashboardPage = () => {
           </div>
         </section>
 
+        {/* Quick Actions */}
+        <section className="dashboard-quick-actions">
+          <h2>Quick Actions</h2>
+          <div className="action-buttons">
+            <Link to="/create-agent" className="action-button">
+              <span className="action-icon">+</span>
+              <span>Create Agent</span>
+            </Link>
+            <Link to="/marketplace" className="action-button">
+              <span className="action-icon">🛒</span>
+              <span>Browse Marketplace</span>
+            </Link>
+            <Link to="/documentation" className="action-button">
+              <span className="action-icon">📚</span>
+              <span>Documentation</span>
+            </Link>
+            <Link to="/profile" className="action-button">
+              <span className="action-icon">👤</span>
+              <span>Edit Profile</span>
+            </Link>
+          </div>
+        </section>
+
         {/* My Agents Section */}
         <section className="dashboard-agents">
           <div className="section-header">
@@ -231,29 +246,6 @@ const DashboardPage = () => {
               ))}
             </div>
           )}
-        </section>
-
-        {/* Quick Actions */}
-        <section className="dashboard-actions">
-          <h2>Quick Actions</h2>
-          <div className="action-buttons">
-            <Link to="/create-agent" className="action-button">
-              <span className="action-icon">+</span>
-              <span>Create Agent</span>
-            </Link>
-            <Link to="/marketplace" className="action-button">
-              <span className="action-icon">🛒</span>
-              <span>Browse Marketplace</span>
-            </Link>
-            <Link to="/documentation" className="action-button">
-              <span className="action-icon">📚</span>
-              <span>Documentation</span>
-            </Link>
-            <Link to="/profile" className="action-button">
-              <span className="action-icon">👤</span>
-              <span>Edit Profile</span>
-            </Link>
-          </div>
         </section>
       </div>
     </div>

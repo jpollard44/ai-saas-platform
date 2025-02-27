@@ -32,26 +32,7 @@ const connectDB = async () => {
   }
 };
 
-// Sample data
-const users = [
-  {
-    name: 'Admin User',
-    email: 'admin@example.com',
-    password: 'password123',
-    isAdmin: true,
-  },
-  {
-    name: 'John Doe',
-    email: 'john@example.com',
-    password: 'password123',
-  },
-  {
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    password: 'password123',
-  },
-];
-
+// Production-ready agents for marketplace
 const agents = [
   {
     name: 'Customer Support Pro',
@@ -99,159 +80,40 @@ const agents = [
   },
 ];
 
-const marketplaceListings = [
-  {
-    title: 'Customer Support Pro',
-    description: 'Advanced AI assistant for handling customer inquiries with empathy and precision. Perfect for businesses looking to improve their customer service experience.',
-    pricing: {
-      type: 'subscription',
-      amount: 19.99,
-      currency: 'USD',
-    },
-    category: 'Customer Support',
-    tags: ['customer service', 'support', 'chatbot'],
-    rating: {
-      average: 4.8,
-      count: 24,
-    },
-    isActive: true,
-  },
-  {
-    title: 'Content Wizard',
-    description: 'Generate blog posts, social media content, and marketing copy with a single prompt. Boost your content creation productivity and maintain a consistent brand voice.',
-    pricing: {
-      type: 'subscription',
-      amount: 24.99,
-      currency: 'USD',
-    },
-    category: 'Content Creation',
-    tags: ['content', 'marketing', 'writing'],
-    rating: {
-      average: 4.7,
-      count: 18,
-    },
-    isActive: true,
-  },
-  {
-    title: 'Data Insights',
-    description: 'Transform raw data into actionable insights with natural language queries. Perfect for business analysts and data scientists who want to quickly extract value from their data.',
-    pricing: {
-      type: 'subscription',
-      amount: 39.99,
-      currency: 'USD',
-    },
-    category: 'Data Analysis',
-    tags: ['data', 'analytics', 'insights'],
-    rating: {
-      average: 4.9,
-      count: 12,
-    },
-    isActive: true,
-  },
-  {
-    title: 'Code Assistant',
-    description: 'Help with coding tasks, debugging, and explaining complex code. Your AI pair programming partner that helps you write better code faster.',
-    pricing: {
-      type: 'free',
-      currency: 'USD',
-    },
-    category: 'Productivity',
-    tags: ['coding', 'programming', 'development'],
-    rating: {
-      average: 4.6,
-      count: 30,
-    },
-    isActive: true,
-  },
-];
-
-const reviews = [
-  {
-    rating: 5,
-    comment: 'This agent has completely transformed our customer support operations. Response times are down and customer satisfaction is up!',
-  },
-  {
-    rating: 4,
-    comment: 'Very good at generating content ideas and drafts. Sometimes needs a bit of editing but overall a huge time saver.',
-  },
-  {
-    rating: 5,
-    comment: 'The data insights from this agent are incredible. It found patterns in our data that we had missed for months.',
-  },
-  {
-    rating: 4,
-    comment: 'Great coding assistant. Helps me debug issues quickly and explains complex concepts clearly.',
-  },
-];
-
 // Import data into DB
 const importData = async () => {
   try {
+    const conn = await connectDB();
+    
     // Clear existing data
-    await User.deleteMany();
     await Agent.deleteMany();
     await MarketplaceListing.deleteMany();
     await Review.deleteMany();
+    
+    console.log('Data cleared from database');
 
-    console.log('Data cleared...');
-
-    // Create users
-    const createdUsers = await User.insertMany(
-      users.map((user) => {
-        return {
-          ...user,
-          password: bcrypt.hashSync(user.password, 10),
-        };
-      })
-    );
-
-    const adminUser = createdUsers[0]._id;
-    const regularUser = createdUsers[1]._id;
-    const anotherUser = createdUsers[2]._id;
-
-    console.log('Users created...');
-
-    // Create agents
-    const createdAgents = await Agent.insertMany(
-      agents.map((agent, index) => {
-        return {
-          ...agent,
-          userId: index % 2 === 0 ? adminUser : regularUser,
-        };
-      })
-    );
-
-    console.log('Agents created...');
-
-    // Create marketplace listings
-    const createdListings = await MarketplaceListing.insertMany(
-      marketplaceListings.map((listing, index) => {
-        return {
-          ...listing,
-          agentId: createdAgents[index]._id,
-          sellerId: index % 2 === 0 ? adminUser : regularUser,
-        };
-      })
-    );
-
-    console.log('Marketplace listings created...');
-
-    // Create reviews
-    const createdReviews = await Promise.all(
-      reviews.map(async (review, index) => {
-        return await Review.create({
-          userId: index % 2 === 0 ? regularUser : anotherUser,
-          agentId: createdAgents[index]._id,
-          listingId: createdListings[index]._id,
-          rating: review.rating,
-          comment: review.comment,
-        });
-      })
-    );
-
-    console.log('Reviews created...');
-
-    console.log('Data imported!');
+    // Create marketplace agents
+    const createdAgents = await Agent.insertMany(agents);
+    console.log(`${createdAgents.length} agents created`);
+    
+    // Create marketplace listings for each agent
+    const marketplaceListings = createdAgents.map(agent => ({
+      agent: agent._id,
+      price: Math.floor(Math.random() * 4) * 5 + 5, // Random price between $5-$20 in $5 increments
+      category: agent.templateId,
+      features: [
+        'Unlimited conversations',
+        'Custom instructions',
+        'Web search capability',
+        '24/7 availability'
+      ],
+      isPublished: true
+    }));
+    
+    await MarketplaceListing.insertMany(marketplaceListings);
+    console.log(`${marketplaceListings.length} marketplace listings created`);
+    
+    console.log('Data imported successfully');
     process.exit();
   } catch (error) {
     console.error(`Error: ${error.message}`);
@@ -262,12 +124,13 @@ const importData = async () => {
 // Delete data from DB
 const destroyData = async () => {
   try {
-    await User.deleteMany();
+    await connectDB();
+    
     await Agent.deleteMany();
     await MarketplaceListing.deleteMany();
     await Review.deleteMany();
-
-    console.log('Data destroyed!');
+    
+    console.log('Data destroyed successfully');
     process.exit();
   } catch (error) {
     console.error(`Error: ${error.message}`);
