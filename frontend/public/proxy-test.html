@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Proxy Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS Proxy Test</h1>
+    
+    <div>
+        <p>This page tests the CORS proxy running at <code>http://localhost:8080</code>.</p>
+        <p>Make sure the proxy is running before testing.</p>
+    </div>
+    
+    <div>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <button onclick="testAgents()">Test Agents Endpoint</button>
+    </div>
+    
+    <div>
+        <h2>Results</h2>
+        <div id="result" class="result">Results will appear here...</div>
+    </div>
+    
+    <script>
+        // Helper function to display results
+        function displayResult(title, data) {
+            const resultDiv = document.getElementById('result');
+            let content = `${title}\n\n`;
+            
+            if (typeof data === 'object') {
+                content += JSON.stringify(data, null, 2);
+            } else {
+                content += data;
+            }
+            
+            resultDiv.textContent = content;
+        }
+        
+        // Test health endpoint
+        function testHealth() {
+            displayResult('Testing health endpoint...', 'Sending request...');
+            
+            fetch('http://localhost:8080/health')
+                .then(response => response.json())
+                .then(data => {
+                    displayResult('Health Endpoint Response:', data);
+                })
+                .catch(error => {
+                    displayResult('Health Endpoint Error:', error.toString());
+                    console.error('Error:', error);
+                });
+        }
+        
+        // Test agents endpoint
+        function testAgents() {
+            displayResult('Testing agents endpoint...', 'Sending request...');
+            
+            // Get token from localStorage if available
+            const token = localStorage.getItem('token');
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            fetch('http://localhost:8080/proxy/agents', {
+                headers: headers
+            })
+                .then(response => response.json())
+                .then(data => {
+                    displayResult('Agents Endpoint Response:', data);
+                })
+                .catch(error => {
+                    displayResult('Agents Endpoint Error:', error.toString());
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>
