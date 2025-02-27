@@ -1,0 +1,13 @@
+# Render Environment Variables Update
+# Copy these variables to your Render dashboard for the backend service
+
+NODE_ENV=production
+PORT=5001
+MONGO_URI=mongodb+srv://[username]:[password]@pollardhub-prod.pvnew.mongodb.net/Astro?retryWrites=true&w=majority
+JWT_SECRET=7e4520bf113711aff4138346b6857a1dbd7b4894428c627c823cdf23561326a5
+JWT_EXPIRE=30d
+FRONTEND_URL=https://ai-saas-platform-web.onrender.com
+OPENAI_API_KEY=your_openai_api_key
+STRIPE_API_KEY=your_stripe_api_key
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret

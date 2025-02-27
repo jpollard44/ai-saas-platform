@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const {
   createAgent,
   getAgentDetails,
@@ -14,8 +15,16 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// CORS options for specific routes
+const corsOptions = {
+  origin: '*',
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Protected routes
-router.post('/create', protect, createAgent);
+router.options('/create', cors(corsOptions)); // Handle preflight for create
+router.post('/create', cors(corsOptions), protect, createAgent);
 router.get('/', protect, getUserAgents);
 router.get('/:agentId', protect, getAgentDetails);
 router.put('/:agentId', protect, updateAgent);
