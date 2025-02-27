@@ -130,11 +130,13 @@ const CreateAgentPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
     setSubmitError(null);
     
     try {
-      // If pricing type is free, ensure amount is 0
       const updatedFormData = {
         ...formData,
         pricing: {
@@ -145,9 +147,19 @@ const CreateAgentPage = () => {
       
       const response = await agentService.createAgent(updatedFormData);
       
+      console.log('Agent creation response:', response);
+      
       if (response.data && response.data.success) {
         toast.success('Agent created successfully!');
-        navigate(`/agents/${response.data.data._id}`);
+        
+        // Check if data and _id exist before navigating
+        if (response.data.data && response.data.data._id) {
+          navigate(`/agents/${response.data.data._id}`);
+        } else {
+          // If _id is missing, navigate to the agents list
+          toast.info('Agent created but details not available. Redirecting to agents list.');
+          navigate('/agents');
+        }
       } else {
         if (isMounted.current) {
           setSubmitError('Failed to create agent. Please try again.');
