@@ -421,7 +421,7 @@ const CreateAgentPage = () => {
                   id="instructions"
                   name="instructions"
                   className="form-control instructions-textarea"
-                  value={formData.instructions}
+                  value={formData.instructions || ''}
                   onChange={handleChange}
                   placeholder="Provide detailed instructions for your agent. For example: You are a customer support agent for a software company. Be helpful, concise, and friendly. Always ask for clarification if the user's question is ambiguous..."
                   rows="10"
