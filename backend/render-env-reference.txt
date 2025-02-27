@@ -1,10 +1,18 @@
 # Render Environment Variables Reference
-# Copy these variables to your Render dashboard when setting up your web service
+# Copy these variables to your Render dashboard for the backend service
 
 NODE_ENV=production
-PORT=10000
+PORT=5001
 MONGO_URI=your_mongodb_atlas_connection_string
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=generate_a_secure_random_string_at_least_32_characters_long
 JWT_EXPIRE=30d
+FRONTEND_URL=https://ai-saas-platform-web.onrender.com
 OPENAI_API_KEY=your_openai_api_key
 STRIPE_API_KEY=your_stripe_api_key
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+
+# Important Notes:
+# 1. Make sure JWT_SECRET is set to the same value in both development and production
+# 2. FRONTEND_URL must match your actual frontend URL for CORS to work properly
+# 3. Never commit actual API keys to your repository
