@@ -1,4 +1,5 @@
 const Agent = require('../models/agentModel');
+const MarketplaceListing = require('../models/marketplaceModel');
 const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
@@ -39,7 +40,8 @@ const upload = multer({
 // @access  Private
 exports.createAgent = async (req, res, next) => {
   try {
-    console.log('Creating agent with data:', req.body);
+    console.log('Creating agent with data:', JSON.stringify(req.body));
+    console.log('User ID:', req.user.id);
     
     const {
       name,
@@ -58,6 +60,11 @@ exports.createAgent = async (req, res, next) => {
     // Validate required fields
     if (!name || !description || !modelId || !instructions) {
       console.log('Validation failed: Missing required fields');
+      console.log('name:', name);
+      console.log('description:', description);
+      console.log('modelId:', modelId);
+      console.log('instructions:', instructions);
+      
       return res.status(400).json({
         success: false,
         error: 'Please provide name, description, model, and instructions'
@@ -88,19 +95,26 @@ exports.createAgent = async (req, res, next) => {
       agentData.visibility = 'private'; // Default to private if not specified or invalid
     }
 
+    console.log('Creating agent with data:', JSON.stringify(agentData));
+
     // Create new agent
     const agent = await Agent.create(agentData);
 
     // Log the agent object for debugging
-    console.log('Created agent:', agent);
+    console.log('Created agent:', JSON.stringify(agent));
 
     // Optional: Test the agent with OpenAI if needed
     let testResponse = null;
     if (process.env.NODE_ENV !== 'test') {
       try {
-        const testQuery = "Briefly introduce yourself based on your instructions.";
-        const result = await openaiService.runAgent(agent, testQuery);
-        testResponse = result.response;
+        // Check if openaiService is properly initialized
+        if (openaiService && typeof openaiService.runAgent === 'function') {
+          const testQuery = "Briefly introduce yourself based on your instructions.";
+          const result = await openaiService.runAgent(agent, testQuery);
+          testResponse = result.response;
+        } else {
+          console.warn('OpenAI service not properly initialized, skipping agent test');
+        }
       } catch (err) {
         console.error('Agent test error:', err);
         // Don't fail the whole request if test fails
@@ -408,8 +422,6 @@ exports.getUserAgents = async (req, res, next) => {
 // @access  Private
 exports.updateAgent = async (req, res, next) => {
   try {
-    const { name, customizationOptions } = req.body;
-
     // Get agent
     let agent = await Agent.findById(req.params.agentId);
 
@@ -428,11 +440,35 @@ exports.updateAgent = async (req, res, next) => {
       });
     }
 
-    // Update fields
+    // Fields that can be updated
+    const allowedUpdates = [
+      'name', 
+      'description', 
+      'instructions', 
+      'temperature', 
+      'maxTokens', 
+      'enableWebSearch', 
+      'enableKnowledgeBase', 
+      'enableMemory', 
+      'visibility',
+      'pricing',
+      'customizationOptions'
+    ];
+    
+    // Create update object with only allowed fields
     const updateFields = {};
-    if (name) updateFields.name = name;
-    if (customizationOptions) updateFields.customizationOptions = customizationOptions;
-
+    for (const field of allowedUpdates) {
+      if (req.body[field] !== undefined) {
+        updateFields[field] = req.body[field];
+      }
+    }
+    
+    // If pricing type is free, ensure amount is 0
+    if (updateFields.pricing && updateFields.pricing.type === 'free') {
+      updateFields.pricing.amount = 0;
+    }
+    
+    // Update agent
     agent = await Agent.findByIdAndUpdate(
       req.params.agentId,
       updateFields,
@@ -442,11 +478,154 @@ exports.updateAgent = async (req, res, next) => {
       }
     );
 
+    // If the agent is published to marketplace, update the marketplace listing as well
+    if (agent.visibility === 'marketplace') {
+      try {
+        console.log('Updating marketplace listing from updateAgent function');
+        
+        const marketplaceListing = await MarketplaceListing.findOne({ agentId: agent._id });
+        
+        if (marketplaceListing) {
+          console.log('Found marketplace listing:', marketplaceListing._id);
+          
+          // Create update object for marketplace
+          const marketplaceUpdates = {};
+          
+          if (updateFields.name) marketplaceUpdates.title = updateFields.name;
+          if (updateFields.description) marketplaceUpdates.description = updateFields.description;
+          if (updateFields.pricing) marketplaceUpdates.pricing = updateFields.pricing;
+          
+          // Update the marketplace listing using findOne and save to ensure validation works
+          Object.assign(marketplaceListing, marketplaceUpdates);
+          await marketplaceListing.save();
+          
+          console.log('Marketplace listing updated successfully');
+        }
+      } catch (marketplaceError) {
+        console.error('Error updating marketplace listing:', marketplaceError);
+        // Continue with the response even if marketplace update fails
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: agent
     });
   } catch (err) {
+    console.error('Error updating agent:', err);
+    next(err);
+  }
+};
+
+// @desc    Update agent pricing
+// @route   PUT /api/agents/:agentId/pricing
+// @access  Private
+exports.updateAgentPricing = async (req, res, next) => {
+  try {
+    console.log('Received pricing update request body:', JSON.stringify(req.body));
+    
+    // Extract pricing data from request body, regardless of structure
+    let pricingData;
+    
+    if (req.body.pricing) {
+      // If pricing is nested under 'pricing' key
+      pricingData = req.body.pricing;
+    } else if (req.body.type) {
+      // If pricing fields are directly in the request body
+      pricingData = {
+        type: req.body.type,
+        amount: req.body.amount || 0,
+        currency: req.body.currency || 'USD'
+      };
+    } else {
+      // No valid pricing data found
+      console.log('No valid pricing data found in request');
+      return res.status(400).json({
+        success: false,
+        error: 'Valid pricing information is required'
+      });
+    }
+    
+    console.log('Extracted pricing data:', pricingData);
+    
+    // Validate pricing type
+    if (!pricingData.type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Pricing type is required'
+      });
+    }
+    
+    if (!['free', 'one-time', 'subscription'].includes(pricingData.type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid pricing type. Must be free, one-time, or subscription'
+      });
+    }
+    
+    // Get agent
+    let agent = await Agent.findById(req.params.agentId);
+
+    if (!agent) {
+      return res.status(404).json({
+        success: false,
+        error: 'Agent not found'
+      });
+    }
+
+    // Ensure user owns the agent
+    if (agent.userId.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authorized to update this agent'
+      });
+    }
+    
+    // Create standardized pricing object
+    const updatedPricing = {
+      type: pricingData.type,
+      amount: pricingData.type === 'free' ? 0 : (pricingData.amount || 0),
+      currency: pricingData.currency || 'USD'
+    };
+    
+    console.log('Final pricing data to save:', updatedPricing);
+    
+    // Update agent pricing using findOne and save to ensure validation works correctly
+    agent = await Agent.findOne({ _id: req.params.agentId });
+    agent.pricing = updatedPricing;
+    await agent.save();
+    
+    // If the agent is published to marketplace, update the marketplace listing as well
+    if (agent.visibility === 'marketplace') {
+      try {
+        console.log('Updating marketplace listing for agent:', agent._id);
+        
+        // Find the marketplace listing
+        const marketplaceListing = await MarketplaceListing.findOne({ agentId: agent._id });
+        
+        if (marketplaceListing) {
+          console.log('Found marketplace listing:', marketplaceListing._id);
+          
+          // Update the marketplace listing using findOne and save
+          marketplaceListing.pricing = updatedPricing;
+          await marketplaceListing.save();
+          
+          console.log('Marketplace listing updated successfully');
+        } else {
+          console.log('No marketplace listing found for agent');
+        }
+      } catch (marketplaceError) {
+        console.error('Error updating marketplace listing:', marketplaceError);
+        // Continue with the response even if marketplace update fails
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: agent
+    });
+  } catch (err) {
+    console.error('Error updating agent pricing:', err);
     next(err);
   }
 };

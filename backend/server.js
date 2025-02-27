@@ -24,6 +24,8 @@ const agentRoutes = require('./routes/agentRoutes');
 const marketplaceRoutes = require('./routes/marketplaceRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const communityRoutes = require('./routes/communityRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const onboardingRoutes = require('./routes/onboardingRoutes');
 
 const app = express();
 
@@ -74,6 +76,8 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {

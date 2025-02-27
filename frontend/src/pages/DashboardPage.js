@@ -20,9 +20,36 @@ const DashboardPage = () => {
     const fetchDashboardData = async () => {
       try {
         // Fetch actual agents from API
+        console.log('Fetching agents data...');
         const agentsResponse = await agentService.getAgents();
-        const fetchedAgents = agentsResponse.data.data || [];
+        console.log('Agents response:', JSON.stringify(agentsResponse));
         
+        // Check if we have a valid response structure
+        if (!agentsResponse || !agentsResponse.data) {
+          console.error('Invalid agents response structure:', agentsResponse);
+          setAgents([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Determine the agents array from the response
+        let fetchedAgents = [];
+        
+        // Check if we have the data property in the response
+        if (!agentsResponse.data.data && Array.isArray(agentsResponse.data)) {
+          // Handle case where data is directly in the response.data
+          console.log('Agents data is directly in response.data');
+          fetchedAgents = agentsResponse.data || [];
+        } else {
+          // Standard structure with nested data
+          console.log('Agents data is in response.data.data');
+          fetchedAgents = agentsResponse.data.data || [];
+        }
+        
+        // Log the agents that were fetched
+        console.log('Fetched agents:', fetchedAgents);
+        
+        // Set the agents state
         setAgents(fetchedAgents);
         
         // Calculate analytics from agent data

@@ -1,0 +1,230 @@
+.batch-operations {
+  background-color: var(--bg-highlight);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.checkbox-wrapper label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.select-all-button {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.batch-action {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.batch-action:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.batch-action.deploy {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.batch-action.deploy:hover:not(:disabled) {
+  background-color: var(--success);
+  color: white;
+}
+
+.batch-action.deactivate {
+  background-color: var(--warning-light);
+  color: var(--warning);
+}
+
+.batch-action.deactivate:hover:not(:disabled) {
+  background-color: var(--warning);
+  color: white;
+}
+
+.batch-action.export {
+  background-color: var(--info-light);
+  color: var(--info);
+}
+
+.batch-action.export:hover:not(:disabled) {
+  background-color: var(--info);
+  color: white;
+}
+
+.batch-action.delete {
+  background-color: var(--danger-light);
+  color: var(--danger);
+}
+
+.batch-action.delete:hover:not(:disabled) {
+  background-color: var(--danger);
+  color: white;
+}
+
+/* Confirmation Dialog */
+.confirmation-dialog {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.confirmation-content {
+  text-align: center;
+  max-width: 500px;
+}
+
+.confirmation-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.confirmation-content h3 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.confirmation-content p {
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary);
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.cancel-button {
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: none;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+}
+
+.confirm-button {
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  text-transform: capitalize;
+}
+
+.confirm-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.confirm-button.delete {
+  background-color: var(--danger);
+  color: white;
+}
+
+.confirm-button.delete:hover:not(:disabled) {
+  background-color: var(--danger-dark);
+}
+
+.confirm-button.deploy {
+  background-color: var(--success);
+  color: white;
+}
+
+.confirm-button.deploy:hover:not(:disabled) {
+  background-color: var(--success-dark);
+}
+
+.confirm-button.deactivate {
+  background-color: var(--warning);
+  color: white;
+}
+
+.confirm-button.deactivate:hover:not(:disabled) {
+  background-color: var(--warning-dark);
+}
+
+.confirm-button.export {
+  background-color: var(--info);
+  color: white;
+}
+
+.confirm-button.export:hover:not(:disabled) {
+  background-color: var(--info-dark);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .batch-operations {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .selection-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .batch-actions {
+    justify-content: space-between;
+  }
+  
+  .batch-action {
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+  }
+}

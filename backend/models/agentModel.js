@@ -57,6 +57,33 @@ const AgentSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  pricing: {
+    type: {
+      type: String,
+      enum: ['free', 'one-time', 'subscription'],
+      default: 'free'
+    },
+    amount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      validate: {
+        validator: function(value) {
+          if (this.pricing && this.pricing.type === 'free') {
+            return value === 0;
+          } else if (this.pricing && this.pricing.type !== 'free') {
+            return value > 0;
+          }
+          return value >= 0;
+        },
+        message: 'Amount must be 0 for free agents and greater than 0 for paid agents'
+      }
+    },
+    currency: {
+      type: String,
+      default: 'USD'
+    }
+  },
   visibility: {
     type: String,
     enum: ['private', 'public', 'marketplace'],

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { agentService, paymentService } from '../services/api';
+import { agentService, paymentService, marketplaceService } from '../services/api';
 import './AgentDetailsPage.css';
 
 const AgentDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +18,7 @@ const AgentDetailsPage = () => {
     const fetchAgentDetails = async () => {
       try {
         setLoading(true);
-        const response = await agentService.getAgent(id);
+        const response = await marketplaceService.getListing(id);
         
         if (response.data && response.data.success) {
           setAgent(response.data.data);
@@ -39,21 +39,36 @@ const AgentDetailsPage = () => {
   }, [id]);
 
   const handlePurchase = async () => {
-    if (!currentUser) {
-      navigate('/login', { state: { from: `/agents/${id}` } });
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: `/marketplace/${id}` } });
       return;
     }
 
     try {
       setPaymentProcessing(true);
+      
+      // Check if the agent is free
+      const isFree = agent.pricing ? 
+        agent.pricing.type === 'free' : 
+        (agent.price === 0 || agent.price === undefined);
+      
       const response = await paymentService.createCheckoutSession({
         agentId: id,
         successUrl: `${window.location.origin}/dashboard`,
-        cancelUrl: `${window.location.origin}/agents/${id}`
+        cancelUrl: `${window.location.origin}/marketplace/${id}`
       });
-
-      if (response.data && response.data.success && response.data.url) {
-        window.location.href = response.data.url;
+      
+      if (response.data && response.data.success) {
+        if (response.data.isFree) {
+          // For free agents, redirect to dashboard immediately
+          navigate('/dashboard');
+        } else if (response.data.url) {
+          // For paid agents, redirect to Stripe checkout
+          window.location.href = response.data.url;
+        } else {
+          alert('Failed to process request');
+        }
       } else {
         alert('Failed to initiate checkout process');
       }
@@ -75,7 +90,7 @@ const AgentDetailsPage = () => {
     }
   };
 
-  const isOwner = currentUser && agent && currentUser.id === agent.createdBy;
+  const isOwner = currentUser && agent && (currentUser.id === agent.createdBy || currentUser.id === agent.sellerId);
   const hasSubscribed = currentUser && agent && agent.subscribers?.includes(currentUser.id);
 
   if (loading) {
@@ -100,22 +115,23 @@ const AgentDetailsPage = () => {
         <div className="agent-details-header-content">
           <div className="agent-details-image">
             {agent.imageUrl ? (
-              <img src={agent.imageUrl} alt={agent.name} />
+              <img src={agent.imageUrl} alt={agent.title || agent.name} />
             ) : (
               <div className="agent-image-placeholder">
-                {agent.name.charAt(0).toUpperCase()}
+                {(agent.title || agent.name || '').charAt(0).toUpperCase()}
               </div>
             )}
           </div>
           
           <div className="agent-details-info">
-            <h1>{agent.name}</h1>
+            <h1>{agent.title || agent.name}</h1>
             <p className="agent-details-description">{agent.description}</p>
             
             <div className="agent-details-meta">
               <span className="agent-details-category">{agent.category}</span>
               <span className="agent-details-rating">
-                ★ {agent.rating || '0.0'} ({agent.reviewCount || 0} reviews)
+                ★ {agent.rating && typeof agent.rating === 'object' ? agent.rating.average : agent.rating || '0.0'} 
+                ({agent.rating && typeof agent.rating === 'object' ? agent.rating.count : agent.reviewCount || 0} reviews)
               </span>
               <span className="agent-details-subscribers">
                 {agent.subscribers?.length || 0} subscribers
@@ -123,14 +139,22 @@ const AgentDetailsPage = () => {
             </div>
             
             <div className="agent-details-creator">
-              <p>Created by: <Link to={`/profile/${agent.createdBy}`}>{agent.creatorName}</Link></p>
+              <p>Created by: <Link to={`/profile/${agent.createdBy || agent.sellerId}`}>
+                {agent.creatorName || (agent.sellerId && agent.sellerId.name) || 'Unknown'}
+              </Link></p>
               <p>Last updated: {new Date(agent.updatedAt).toLocaleDateString()}</p>
             </div>
           </div>
           
           <div className="agent-details-actions">
             <div className="agent-details-price">
-              {agent.price > 0 ? (
+              {agent.pricing ? (
+                agent.pricing.type !== 'free' ? (
+                  <span>${agent.pricing.amount.toFixed(2)}</span>
+                ) : (
+                  <span>Free</span>
+                )
+              ) : agent.price > 0 ? (
                 <span>${agent.price.toFixed(2)}</span>
               ) : (
                 <span>Free</span>
@@ -162,7 +186,10 @@ const AgentDetailsPage = () => {
                       onClick={handlePurchase}
                       disabled={paymentProcessing}
                     >
-                      {paymentProcessing ? 'Processing...' : agent.price > 0 ? 'Subscribe' : 'Get for Free'}
+                      {paymentProcessing ? 'Processing...' : 
+                        agent.pricing ? 
+                          agent.pricing.type !== 'free' ? 'Subscribe' : 'Get for Free' 
+                        : agent.price > 0 ? 'Subscribe' : 'Get for Free'}
                     </button>
                     
                     {agent.hasDemo && (
@@ -307,13 +334,13 @@ const AgentDetailsPage = () => {
               
               <div className="reviews-summary">
                 <div className="overall-rating">
-                  <span className="rating-large">{agent.rating || '0.0'}</span>
+                  <span className="rating-large">{agent.rating && typeof agent.rating === 'object' ? agent.rating.average : agent.rating || '0.0'}</span>
                   <div className="rating-stars">
                     {[1, 2, 3, 4, 5].map(star => (
-                      <span key={star} className={star <= Math.round(agent.rating || 0) ? 'star filled' : 'star'}>★</span>
+                      <span key={star} className={star <= Math.round(agent.rating && typeof agent.rating === 'object' ? agent.rating.average : agent.rating || 0) ? 'star filled' : 'star'}>★</span>
                     ))}
                   </div>
-                  <span className="rating-count">Based on {agent.reviewCount || 0} reviews</span>
+                  <span className="rating-count">Based on {agent.rating && typeof agent.rating === 'object' ? agent.rating.count : agent.reviewCount || 0} reviews</span>
                 </div>
                 
                 <div className="rating-breakdown">

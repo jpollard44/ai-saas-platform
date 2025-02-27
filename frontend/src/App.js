@@ -21,10 +21,12 @@ import AgentDetailsPage from './pages/AgentDetailsPage';
 // Private pages
 import DashboardPage from './pages/DashboardPage';
 import CreateAgentPage from './pages/CreateAgentPage';
+import EditAgentPage from './pages/EditAgentPage';
 import AgentDetailPage from './pages/AgentDetailPage';
 import PublishAgentPage from './pages/PublishAgentPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
+import MyAgentsPage from './pages/MyAgentsPage';
 
 import './styles/globals.css';
 import './App.css';
@@ -120,6 +122,14 @@ function App() {
               }
             />
             <Route
+              path="/agents/:agentId/edit"
+              element={
+                <PrivateRoute>
+                  <EditAgentPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
               path="/agents/:agentId/publish"
               element={
                 <PrivateRoute>
@@ -140,6 +150,38 @@ function App() {
               element={
                 <PrivateRoute>
                   <ProfilePage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/my-agents"
+              element={
+                <PrivateRoute>
+                  <MyAgentsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/my-listings"
+              element={
+                <PrivateRoute>
+                  <DashboardPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/my-templates"
+              element={
+                <PrivateRoute>
+                  <DashboardPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/forum"
+              element={
+                <PrivateRoute>
+                  <DashboardPage />
                 </PrivateRoute>
               }
             />

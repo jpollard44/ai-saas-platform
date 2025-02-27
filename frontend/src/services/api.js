@@ -218,6 +218,15 @@ export const agentService = {
   getAgents: () => api.get('/agents'),
   getAgent: (agentId) => api.get(`/agents/${agentId}`),
   updateAgent: (agentId, agentData) => api.put(`/agents/${agentId}`, agentData),
+  updateAgentPricing: (agentId, pricingData) => {
+    console.log('API service updateAgentPricing called with:', JSON.stringify(pricingData));
+    return api.put(`/agents/${agentId}/pricing`, pricingData);
+  },
+  deleteAgent: (agentId) => api.delete(`/agents/${agentId}`),
+  exportAgent: (agentId, format = 'json') => api.get(`/agents/${agentId}/export?format=${format}`, {
+    responseType: 'blob'
+  }),
+  batchOperation: (operation, agentIds) => api.post('/agents/batch', { operation, agentIds }),
   uploadData: (agentId, formData) => api.post(`/agents/${agentId}/upload-data`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

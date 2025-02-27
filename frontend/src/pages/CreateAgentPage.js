@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CreateAgentPage.css';
-import { agentService } from '../services/api';
+import { agentService } from '../services/api'; // Fix the API service reference
 import { toast } from 'react-toastify';
 
 const modelOptions = [
@@ -22,6 +22,19 @@ const templateOptions = [
 
 const CreateAgentPage = () => {
   const navigate = useNavigate();
+  const isMounted = useRef(true);
+  
+  // Add useEffect for cleanup
+  useEffect(() => {
+    // Set isMounted to true when component mounts
+    isMounted.current = true;
+    
+    // Return cleanup function
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -34,18 +47,37 @@ const CreateAgentPage = () => {
     enableWebSearch: false,
     enableKnowledgeBase: false,
     enableMemory: true,
-    visibility: 'private'
+    visibility: 'private',
+    pricing: {
+      type: 'free',
+      amount: 0,
+      currency: 'USD'
+    }
   });
   const [loading, setLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedModel, setSelectedModel] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    
+    if (name.startsWith('pricing.')) {
+      const pricingField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        pricing: {
+          ...prev.pricing,
+          [pricingField]: type === 'checkbox' ? checked : value
+        }
+      }));
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? checked : value
+      });
+    }
   };
 
   const handleSliderChange = (e) => {
@@ -73,79 +105,99 @@ const CreateAgentPage = () => {
   };
 
   const nextStep = () => {
+    // If we're on the last step, don't proceed to a non-existent step
+    if (currentStep >= 5) {
+      console.log('Already on the last step, not proceeding further');
+      return;
+    }
+    
+    console.log(`Moving from step ${currentStep} to step ${currentStep + 1}`);
     setCurrentStep(currentStep + 1);
     window.scrollTo(0, 0);
   };
 
   const prevStep = () => {
+    // If we're on the first step, don't go back
+    if (currentStep <= 1) {
+      console.log('Already on the first step, not going back');
+      return;
+    }
+    
+    console.log(`Moving from step ${currentStep} to step ${currentStep - 1}`);
     setCurrentStep(currentStep - 1);
     window.scrollTo(0, 0);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
     try {
-      console.log('Submitting form data:', formData);
-      const response = await agentService.createAgent(formData);
-      console.log('Create agent response:', response);
+      // If pricing type is free, ensure amount is 0
+      const updatedFormData = {
+        ...formData,
+        pricing: {
+          ...formData.pricing,
+          amount: formData.pricing.type === 'free' ? 0 : formData.pricing.amount
+        }
+      };
       
-      setLoading(false);
-      toast.success('Agent created successfully!');
+      const response = await agentService.createAgent(updatedFormData);
       
-      // Check if response has the expected structure
-      if (response?.data?.data?._id) {
-        // Standard structure with nested data
+      if (response.data && response.data.success) {
+        toast.success('Agent created successfully!');
         navigate(`/agents/${response.data.data._id}`);
-      } else if (response?.data?._id) {
-        // Flat structure
-        navigate(`/agents/${response.data._id}`);
       } else {
-        // If we can't find the ID, fetch the user's agents and navigate to the most recent one
-        console.log('Could not find agent ID in response, fetching user agents');
-        try {
-          const agentsResponse = await agentService.getAgents();
-          if (agentsResponse?.data?.data?.length > 0) {
-            // Sort by creation date and get the most recent one
-            const agents = agentsResponse.data.data;
-            const mostRecentAgent = agents.sort((a, b) => 
-              new Date(b.createdAt) - new Date(a.createdAt)
-            )[0];
-            
-            if (mostRecentAgent?._id) {
-              navigate(`/agents/${mostRecentAgent._id}`);
-            } else {
-              // If all else fails, just go to the agents list
-              navigate('/agents');
-            }
-          } else {
-            navigate('/agents');
-          }
-        } catch (fetchError) {
-          console.error('Error fetching agents:', fetchError);
-          navigate('/agents');
+        if (isMounted.current) {
+          setSubmitError('Failed to create agent. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error creating agent:', error);
-      toast.error(error.response?.data?.error || 'Failed to create agent. Please try again.');
-      setLoading(false);
+      if (isMounted.current) {
+        setSubmitError(error.response?.data?.error || 'An error occurred while creating the agent');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const validateStep = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.name.trim() !== '' && formData.description.trim() !== '';
-      case 2:
-        return formData.templateId !== '';
-      case 3:
-        return formData.modelId !== '';
-      case 4:
-        return formData.instructions.trim() !== '';
-      default:
-        return true;
+    try {
+      console.log(`Validating step ${currentStep}`);
+      
+      switch (currentStep) {
+        case 1:
+          const isStep1Valid = formData.name.trim() !== '' && formData.description.trim() !== '';
+          console.log(`Step 1 validation: ${isStep1Valid ? 'VALID' : 'INVALID'}`);
+          return isStep1Valid;
+        case 2:
+          const isStep2Valid = formData.templateId !== '';
+          console.log(`Step 2 validation: ${isStep2Valid ? 'VALID' : 'INVALID'}`);
+          return isStep2Valid;
+        case 3:
+          const isStep3Valid = formData.modelId !== '';
+          console.log(`Step 3 validation: ${isStep3Valid ? 'VALID' : 'INVALID'}`);
+          return isStep3Valid;
+        case 4:
+          const isStep4Valid = formData.instructions.trim() !== '';
+          console.log(`Step 4 validation: ${isStep4Valid ? 'VALID' : 'INVALID'}`);
+          return isStep4Valid;
+        case 5:
+          // Step 5 is always valid as it's just settings
+          console.log('Step 5 validation: VALID');
+          return true;
+        default:
+          console.warn(`Unknown step ${currentStep} to validate`);
+          return false;
+      }
+    } catch (error) {
+      console.error('Error in validateStep:', error);
+      // Default to invalid if there's an error
+      return false;
     }
   };
 
@@ -437,6 +489,86 @@ const CreateAgentPage = () => {
                   </label>
                 </div>
               </div>
+
+              <div className="settings-section">
+                <h3>Pricing</h3>
+                
+                <div className="form-group">
+                  <label className="form-label">Pricing Type</label>
+                  <div className="radio-group">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="pricing.type"
+                        value="free"
+                        checked={formData.pricing.type === 'free'}
+                        onChange={handleChange}
+                      />
+                      <span className="radio-text">
+                        <strong>Free</strong> - This agent is free to use
+                      </span>
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="pricing.type"
+                        value="one-time"
+                        checked={formData.pricing.type === 'one-time'}
+                        onChange={handleChange}
+                      />
+                      <span className="radio-text">
+                        <strong>One-time Purchase</strong> - Users pay once for permanent access
+                      </span>
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        name="pricing.type"
+                        value="subscription"
+                        checked={formData.pricing.type === 'subscription'}
+                        onChange={handleChange}
+                      />
+                      <span className="radio-text">
+                        <strong>Subscription</strong> - Users pay a recurring fee
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {formData.pricing.type !== 'free' && (
+                  <div className="form-group">
+                    <label htmlFor="pricing.amount" className="form-label">Price Amount</label>
+                    <input
+                      type="number"
+                      id="pricing.amount"
+                      name="pricing.amount"
+                      className="form-control"
+                      value={formData.pricing.amount}
+                      onChange={handleChange}
+                      min="0.99"
+                      step="0.01"
+                      placeholder="Enter the price amount"
+                      required
+                    />
+                  </div>
+                )}
+
+                {formData.pricing.type !== 'free' && (
+                  <div className="form-group">
+                    <label htmlFor="pricing.currency" className="form-label">Currency</label>
+                    <input
+                      type="text"
+                      id="pricing.currency"
+                      name="pricing.currency"
+                      className="form-control"
+                      value={formData.pricing.currency}
+                      onChange={handleChange}
+                      placeholder="Enter the currency (e.g., USD, EUR, etc.)"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -464,9 +596,9 @@ const CreateAgentPage = () => {
               <button 
                 type="submit" 
                 className="btn btn-primary" 
-                disabled={loading}
+                disabled={isSubmitting}
               >
-                {loading ? 'Creating Agent...' : 'Create Agent'}
+                {isSubmitting ? 'Creating Agent...' : 'Create Agent'}
               </button>
             )}
           </div>
