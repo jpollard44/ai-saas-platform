@@ -88,6 +88,9 @@ exports.createAgent = async (req, res, next) => {
     // Create new agent
     const agent = await Agent.create(agentData);
 
+    // Log the agent object for debugging
+    console.log('Created agent:', agent);
+
     // Optional: Test the agent with OpenAI if needed
     let testResponse = null;
     if (process.env.NODE_ENV !== 'test') {

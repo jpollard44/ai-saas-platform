@@ -92,7 +92,15 @@ const CreateAgentPage = () => {
       setLoading(false);
       toast.success('Agent created successfully!');
       
-      navigate(`/agents/${response.data.data._id}`);
+      // Check if response has the expected structure
+      if (response?.data?.data?._id) {
+        navigate(`/agents/${response.data.data._id}`);
+      } else if (response?.data?._id) {
+        navigate(`/agents/${response.data._id}`);
+      } else {
+        console.error('Unexpected response structure:', response);
+        toast.info('Agent created, but could not navigate to details page.');
+      }
     } catch (error) {
       console.error('Error creating agent:', error);
       toast.error(error.response?.data?.error || 'Failed to create agent. Please try again.');
