@@ -104,12 +104,17 @@ exports.createAgent = async (req, res, next) => {
       }
     }
 
-    res.status(201).json({
+    // Make sure we're sending a proper response
+    const responseData = {
       success: true,
       data: agent,
       testResponse,
       message: 'Agent created successfully!'
-    });
+    };
+    
+    console.log('Sending response:', responseData);
+    
+    return res.status(201).json(responseData);
   } catch (err) {
     next(err);
   }

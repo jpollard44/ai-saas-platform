@@ -192,6 +192,21 @@ function getMockData(url, method) {
   return [];
 }
 
+// Add response interceptor to handle empty responses
+api.interceptors.response.use(
+  (response) => {
+    // If the response is empty but status is 200/201, create a default success response
+    if (response.status >= 200 && response.status < 300 && !response.data) {
+      console.log('Empty response detected, creating default response object');
+      response.data = { success: true };
+    }
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,

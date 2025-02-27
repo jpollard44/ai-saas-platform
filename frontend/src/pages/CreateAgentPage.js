@@ -87,19 +87,45 @@ const CreateAgentPage = () => {
     setLoading(true);
 
     try {
+      console.log('Submitting form data:', formData);
       const response = await agentService.createAgent(formData);
+      console.log('Create agent response:', response);
       
       setLoading(false);
       toast.success('Agent created successfully!');
       
       // Check if response has the expected structure
       if (response?.data?.data?._id) {
+        // Standard structure with nested data
         navigate(`/agents/${response.data.data._id}`);
       } else if (response?.data?._id) {
+        // Flat structure
         navigate(`/agents/${response.data._id}`);
       } else {
-        console.error('Unexpected response structure:', response);
-        toast.info('Agent created, but could not navigate to details page.');
+        // If we can't find the ID, fetch the user's agents and navigate to the most recent one
+        console.log('Could not find agent ID in response, fetching user agents');
+        try {
+          const agentsResponse = await agentService.getAgents();
+          if (agentsResponse?.data?.data?.length > 0) {
+            // Sort by creation date and get the most recent one
+            const agents = agentsResponse.data.data;
+            const mostRecentAgent = agents.sort((a, b) => 
+              new Date(b.createdAt) - new Date(a.createdAt)
+            )[0];
+            
+            if (mostRecentAgent?._id) {
+              navigate(`/agents/${mostRecentAgent._id}`);
+            } else {
+              // If all else fails, just go to the agents list
+              navigate('/agents');
+            }
+          } else {
+            navigate('/agents');
+          }
+        } catch (fetchError) {
+          console.error('Error fetching agents:', fetchError);
+          navigate('/agents');
+        }
       }
     } catch (error) {
       console.error('Error creating agent:', error);
