@@ -40,59 +40,44 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Security middleware
-// Enable CORS for development
-if (process.env.NODE_ENV === 'development') {
-  app.use(cors());
-  console.log('CORS enabled for all origins (development mode)');
-} else {
-  // In production, only allow the frontend origin
-  const allowedOrigins = [
-    process.env.FRONTEND_URL || 'https://ai-saas-platform-web.onrender.com',
-    'https://ai-saas-platform-web.onrender.com',
-    'https://astro-ai-platform.onrender.com'
-  ];
-  
-  console.log('CORS allowed origins:', allowedOrigins);
-  
-  app.use(cors({
-    origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.log('CORS blocked origin:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true
-  }));
-}
+// Enable CORS for all environments
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+console.log('CORS enabled for all origins (debugging mode)');
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', JSON.stringify(req.headers));
+  next();
+});
 
 // Set security headers
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        imgSrc: ["'self'", "data:", "blob:", "https://stripe.com", "https://*.stripe.com"],
-        connectSrc: [
-          "'self'", 
-          "https://api.openai.com", 
-          "https://api.stripe.com", 
-          "https://*.stripe.com"
-        ],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'"],
-        frameSrc: ["'self'", "https://js.stripe.com", "https://*.stripe.com"],
-      },
-    },
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
   })
 );
+
+// Add healthcheck endpoint
+app.get('/api/healthcheck', (req, res) => {
+  console.log('Healthcheck endpoint called');
+  res.status(200).json({ 
+    status: 'success', 
+    message: 'API is running',
+    environment: process.env.NODE_ENV,
+    cors: 'enabled for all origins',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Prevent XSS attacks
 app.use(xss());
