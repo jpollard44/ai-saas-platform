@@ -1,4 +1,5 @@
 const Agent = require('../models/agentModel');
+const mongoose = require('mongoose');
 const MarketplaceListing = require('../models/marketplaceModel');
 const crypto = require('crypto');
 const path = require('path');
@@ -42,6 +43,7 @@ exports.createAgent = async (req, res, next) => {
   try {
     console.log('Creating agent with data:', JSON.stringify(req.body));
     console.log('User ID:', req.user.id);
+    console.log('MongoDB Connection Status:', mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected');
     
     const { 
       name, 
@@ -112,14 +114,22 @@ exports.createAgent = async (req, res, next) => {
     }
 
     console.log('Creating agent with data:', JSON.stringify(agentData));
+    console.log('Agent model exists:', !!mongoose.models.Agent);
 
     // Create new agent
     let agent;
     try {
-      agent = await Agent.create(agentData);
-      console.log('Created agent:', JSON.stringify(agent));
+      console.log('Attempting to save agent to MongoDB...');
+      agent = new mongoose.models.Agent(agentData);
+      console.log('Agent instance created, about to save...');
+      await agent.save();
+      console.log('Agent saved successfully:', agent._id.toString());
     } catch (dbError) {
       console.error('Database error creating agent:', dbError);
+      console.error('Error name:', dbError.name);
+      console.error('Error code:', dbError.code);
+      console.error('Error message:', dbError.message);
+      console.error('Error stack:', dbError.stack);
       return res.status(500).json({
         success: false,
         error: `Database error: ${dbError.message}`
