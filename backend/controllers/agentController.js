@@ -43,31 +43,29 @@ exports.createAgent = async (req, res, next) => {
     console.log('Creating agent with data:', JSON.stringify(req.body));
     console.log('User ID:', req.user.id);
     
-    const {
-      name,
-      description,
-      modelId,
-      templateId,
-      instructions,
-      temperature,
-      maxTokens,
-      enableWebSearch,
-      enableKnowledgeBase,
+    const { 
+      name, 
+      description, 
+      modelId, 
+      templateId, 
+      instructions, 
+      temperature, 
+      maxTokens, 
+      enableWebSearch, 
+      enableKnowledgeBase, 
       enableMemory,
       visibility
     } = req.body;
+    
+    console.log('Request body:', JSON.stringify(req.body));
+    console.log('User ID:', req.user.id);
 
     // Validate required fields
     if (!name || !description || !modelId || !instructions) {
-      console.log('Validation failed: Missing required fields');
-      console.log('name:', name);
-      console.log('description:', description);
-      console.log('modelId:', modelId);
-      console.log('instructions:', instructions);
-      
+      console.error('Missing required fields');
       return res.status(400).json({
         success: false,
-        error: 'Please provide name, description, model, and instructions'
+        error: 'Please provide name, description, model ID, and instructions'
       });
     }
 
@@ -79,6 +77,8 @@ exports.createAgent = async (req, res, next) => {
       modelId,
       instructions
     };
+
+    console.log('Creating agent with user ID:', req.user.id);
 
     // Add optional fields if they exist
     if (templateId) agentData.templateId = templateId;
@@ -114,7 +114,17 @@ exports.createAgent = async (req, res, next) => {
     console.log('Creating agent with data:', JSON.stringify(agentData));
 
     // Create new agent
-    const agent = await Agent.create(agentData);
+    let agent;
+    try {
+      agent = await Agent.create(agentData);
+      console.log('Created agent:', JSON.stringify(agent));
+    } catch (dbError) {
+      console.error('Database error creating agent:', dbError);
+      return res.status(500).json({
+        success: false,
+        error: `Database error: ${dbError.message}`
+      });
+    }
 
     // Log the agent object for debugging
     console.log('Created agent:', JSON.stringify(agent));
