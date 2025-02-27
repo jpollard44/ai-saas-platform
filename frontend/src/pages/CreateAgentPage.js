@@ -145,11 +145,13 @@ const CreateAgentPage = () => {
         }
       };
       
+      console.log('Submitting agent data:', JSON.stringify(updatedFormData));
+      
       const response = await agentService.createAgent(updatedFormData);
       
       console.log('Agent creation response:', response);
       
-      if (response.data && response.data.success) {
+      if (response && response.data && response.data.success) {
         toast.success('Agent created successfully!');
         
         // Check if data and _id exist before navigating
@@ -161,14 +163,19 @@ const CreateAgentPage = () => {
           navigate('/agents');
         }
       } else {
+        const errorMessage = response?.data?.error || 'Failed to create agent. Please try again.';
+        console.error('Error response:', errorMessage);
         if (isMounted.current) {
-          setSubmitError('Failed to create agent. Please try again.');
+          setSubmitError(errorMessage);
+          toast.error(errorMessage);
         }
       }
     } catch (error) {
       console.error('Error creating agent:', error);
+      const errorMessage = error.response?.data?.error || 'An error occurred while creating the agent';
       if (isMounted.current) {
-        setSubmitError(error.response?.data?.error || 'An error occurred while creating the agent');
+        setSubmitError(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       if (isMounted.current) {
@@ -614,6 +621,11 @@ const CreateAgentPage = () => {
               </button>
             )}
           </div>
+          {submitError && (
+            <div className="error-message">
+              <p className="text-danger">{submitError}</p>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -56,14 +56,19 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "blob:"],
-        connectSrc: ["'self'", "https://api.openai.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https://stripe.com", "https://*.stripe.com"],
+        connectSrc: [
+          "'self'", 
+          "https://api.openai.com", 
+          "https://api.stripe.com", 
+          "https://*.stripe.com"
+        ],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
-        frameSrc: ["'self'"],
+        frameSrc: ["'self'", "https://js.stripe.com", "https://*.stripe.com"],
       },
     },
   })

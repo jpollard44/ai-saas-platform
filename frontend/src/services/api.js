@@ -192,6 +192,18 @@ api.interceptors.response.use(
       // that falls out of the range of 2xx
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
+      
+      // Handle authentication errors
+      if (error.response.status === 401) {
+        console.error('Authentication error - redirecting to login');
+        // Clear token if it exists
+        localStorage.removeItem('token');
+        
+        // Only redirect if we're in a browser environment and not in a test
+        if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
+          window.location.href = '/login';
+        }
+      }
     } else if (error.request) {
       // The request was made but no response was received
       console.error('Error request:', error.request);

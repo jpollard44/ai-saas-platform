@@ -9,6 +9,9 @@ const connectDB = async () => {
       process.exit(1);
     }
     
+    // Set strictQuery to suppress the deprecation warning
+    mongoose.set('strictQuery', true);
+    
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
