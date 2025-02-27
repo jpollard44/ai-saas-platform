@@ -47,8 +47,17 @@ exports.protect = async (req, res, next) => {
     }
     
     console.log('User found:', user.email);
-    req.user = user;
-
+    
+    // Set the user object on the request with proper id property
+    req.user = {
+      id: user._id.toString(),
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    };
+    
+    console.log('User set on request:', req.user);
     next();
   } catch (err) {
     console.log('Token verification failed:', err.message);

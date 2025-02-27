@@ -12,24 +12,41 @@ const ProfilePage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('agents');
   const [activeFilter, setActiveFilter] = useState('all');
-  const { currentUser, updateUser } = useAuth();
+  const { currentUser, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
+
+  console.log('ProfilePage - Auth State:', { 
+    currentUser, 
+    isAuthenticated, 
+    loading,
+    token: localStorage.getItem('token'),
+    userId: localStorage.getItem('userId')
+  });
 
   const fetchProfileData = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
-      // Check if we have a current user
-      if (!currentUser || !currentUser.id) {
+      // Get userId from localStorage as a fallback
+      const userId = currentUser?.id || localStorage.getItem('userId');
+      
+      console.log('Fetching profile with userId:', userId);
+      
+      if (!userId) {
+        console.error('No user ID available for profile fetch');
         setError('You must be logged in to view this profile');
         setIsLoading(false);
         return;
       }
       
-      // Fetch user profile data using the current user's ID
-      const userResponse = await userService.getProfile(currentUser.id);
+      // Fetch user profile data using the user ID
+      console.log('Calling userService.getProfile with ID:', userId);
+      const userResponse = await userService.getProfile(userId);
+      console.log('Profile response:', userResponse);
+      
       if (userResponse.data && userResponse.data.success) {
-        setUser(userResponse.data);
+        setUser(userResponse.data.data);
       } else {
         setError('Failed to load profile data');
       }

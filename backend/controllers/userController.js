@@ -100,7 +100,19 @@ exports.loginUser = async (req, res, next) => {
 // @access  Private
 exports.getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.userId);
+    console.log('getUserProfile called with params:', req.params);
+    console.log('Authenticated user:', req.user);
+    
+    const userId = req.params.userId;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({
@@ -110,7 +122,13 @@ exports.getUserProfile = async (req, res, next) => {
     }
 
     // Only allow the authenticated user to view their profile
-    if (user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    // Compare string representations of IDs
+    const requestedId = userId.toString();
+    const authenticatedId = req.user.id.toString();
+    
+    console.log('Comparing IDs:', { requestedId, authenticatedId });
+    
+    if (requestedId !== authenticatedId && req.user.role !== 'admin') {
       return res.status(401).json({
         success: false,
         error: 'Not authorized to access this profile'
@@ -119,11 +137,14 @@ exports.getUserProfile = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      name: user.name,
-      email: user.email,
-      settings: user.settings
+      data: {
+        name: user.name,
+        email: user.email,
+        settings: user.settings
+      }
     });
   } catch (err) {
+    console.error('Error in getUserProfile:', err);
     next(err);
   }
 };
