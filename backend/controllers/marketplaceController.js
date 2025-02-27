@@ -351,3 +351,112 @@ exports.subscribeToAgent = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc    Get agent categories with counts
+// @route   GET /api/marketplace/categories
+// @access  Public
+exports.getCategories = async (req, res, next) => {
+  try {
+    // Predefined categories
+    const categories = [
+      { id: 'Customer Support', name: 'Customer Support', description: 'Agents that help with customer inquiries and support' },
+      { id: 'Content Creation', name: 'Content Creation', description: 'Agents that generate or help create content' },
+      { id: 'Data Analysis', name: 'Data Analysis', description: 'Agents that analyze and interpret data' },
+      { id: 'Education', name: 'Education', description: 'Agents focused on teaching and learning' },
+      { id: 'Productivity', name: 'Productivity', description: 'Agents that help with tasks and organization' },
+      { id: 'Entertainment', name: 'Entertainment', description: 'Agents for entertainment purposes' },
+      { id: 'Other', name: 'Other', description: 'Agents that don\'t fit in the above categories' }
+    ];
+
+    // Count agents in each category
+    const categoryCounts = await MarketplaceListing.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+
+    // Map counts to categories
+    const categoriesWithCounts = categories.map(category => {
+      const categoryData = categoryCounts.find(c => c._id === category.id);
+      return {
+        ...category,
+        count: categoryData ? categoryData.count : 0
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: categoriesWithCounts
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get user's acquired agents
+// @route   GET /api/marketplace/acquired
+// @access  Private
+exports.getUserAcquiredAgents = async (req, res, next) => {
+  try {
+    // Implement this to get agents that the user has purchased or subscribed to
+    res.status(200).json({
+      success: true,
+      data: []
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get user's published agents
+// @route   GET /api/marketplace/published
+// @access  Private
+exports.getUserPublishedAgents = async (req, res, next) => {
+  try {
+    const listings = await MarketplaceListing.find({ sellerId: req.user.id })
+      .populate({
+        path: 'agentId',
+        select: 'name description modelId createdAt'
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: listings
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Get featured agents
+// @route   GET /api/marketplace/featured
+// @access  Public
+exports.getFeaturedAgents = async (req, res, next) => {
+  try {
+    // Get agents with highest ratings or those marked as featured
+    const featuredAgents = await MarketplaceListing.find({ 
+      isActive: true,
+      $or: [
+        { 'rating.average': { $gte: 4.5 } },
+        { featured: true }
+      ]
+    })
+    .populate({
+      path: 'agentId',
+      select: 'name description modelId'
+    })
+    .populate({
+      path: 'sellerId',
+      select: 'name'
+    })
+    .limit(6)
+    .sort({ 'rating.average': -1 });
+
+    res.status(200).json({
+      success: true,
+      data: featuredAgents
+    });
+  } catch (err) {
+    next(err);
+  }
+};

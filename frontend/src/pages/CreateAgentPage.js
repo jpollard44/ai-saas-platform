@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CreateAgentPage.css';
+import { agentService } from '../services/api';
+import { toast } from 'react-toastify';
 
 const modelOptions = [
   { id: 'gpt-4', name: 'GPT-4', description: 'Most powerful model for complex tasks and reasoning' },
@@ -85,20 +87,15 @@ const CreateAgentPage = () => {
     setLoading(true);
 
     try {
-      // This will be replaced with actual API call
-      console.log('Form submitted:', formData);
+      const response = await agentService.createAgent(formData);
       
-      // Simulate API call
-      setTimeout(() => {
-        setLoading(false);
-        navigate('/dashboard');
-      }, 2000);
+      setLoading(false);
+      toast.success('Agent created successfully!');
       
-      // When API is ready:
-      // const response = await agentService.createAgent(formData);
-      // navigate(`/agents/${response.data.id}`);
+      navigate(`/agents/${response.data.data._id}`);
     } catch (error) {
       console.error('Error creating agent:', error);
+      toast.error(error.response?.data?.error || 'Failed to create agent. Please try again.');
       setLoading(false);
     }
   };

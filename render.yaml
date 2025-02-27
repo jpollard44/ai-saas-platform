@@ -13,6 +13,7 @@ services:
         value: "5001"
       - key: JWT_SECRET
         generateValue: true
+        sync: false
       - key: JWT_EXPIRE
         value: 30d
       - key: MONGO_URI
@@ -21,6 +22,13 @@ services:
         value: # This will be manually set in the Render dashboard
       - key: OPENAI_API_KEY
         value: # This will be manually set in the Render dashboard
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        value: # This will be manually set in the Render dashboard
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        value: # This will be manually set in the Render dashboard
+        sync: false
     autoDeploy: true
 
   # Frontend web service

@@ -12,23 +12,55 @@ const AgentSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, 'Name cannot be more than 50 characters']
   },
-  modelType: {
+  description: {
     type: String,
-    required: [true, 'Please select a model type'],
-    enum: ['GPT-3', 'GPT-4', 'BERT', 'Custom']
+    required: [true, 'Please add a description'],
+    trim: true,
+    maxlength: [200, 'Description cannot be more than 200 characters']
   },
-  customizationOptions: {
-    tone: {
-      type: String,
-      enum: ['friendly', 'professional', 'casual', 'formal'],
-      default: 'professional'
-    },
-    responseLength: {
-      type: String,
-      enum: ['short', 'medium', 'long'],
-      default: 'medium'
-    },
-    specialties: [String]
+  modelId: {
+    type: String,
+    required: [true, 'Please select a model'],
+    enum: ['gpt-4', 'gpt-3.5-turbo', 'claude-2', 'llama-2']
+  },
+  templateId: {
+    type: String,
+    required: false,
+    enum: ['customer-support', 'content-writer', 'research-assistant', 'coding-assistant', 'data-analyst', 'blank']
+  },
+  instructions: {
+    type: String,
+    required: [true, 'Please provide instructions for the agent'],
+    trim: true
+  },
+  temperature: {
+    type: Number,
+    default: 0.7,
+    min: 0,
+    max: 1
+  },
+  maxTokens: {
+    type: Number,
+    default: 800,
+    min: 50,
+    max: 4000
+  },
+  enableWebSearch: {
+    type: Boolean,
+    default: false
+  },
+  enableKnowledgeBase: {
+    type: Boolean,
+    default: false
+  },
+  enableMemory: {
+    type: Boolean,
+    default: true
+  },
+  visibility: {
+    type: String,
+    enum: ['private', 'public', 'marketplace'],
+    default: 'private'
   },
   datasetPath: {
     type: String,

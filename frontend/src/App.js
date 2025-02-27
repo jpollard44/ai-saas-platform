@@ -9,6 +9,7 @@ import Footer from './components/layout/Footer';
 import Sidebar from './components/layout/Sidebar';
 import PrivateRoute from './components/routing/PrivateRoute';
 import MainLayout from './components/layout/MainLayout';
+import OnboardingModal from './components/onboarding/OnboardingModal';
 
 // Public pages
 import HomePage from './pages/HomePage';
@@ -20,6 +21,8 @@ import AgentDetailsPage from './pages/AgentDetailsPage';
 // Private pages
 import DashboardPage from './pages/DashboardPage';
 import CreateAgentPage from './pages/CreateAgentPage';
+import AgentDetailPage from './pages/AgentDetailPage';
+import PublishAgentPage from './pages/PublishAgentPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -32,6 +35,7 @@ function App() {
     collapsed: false,
     hovering: false
   });
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Save sidebar state in localStorage
   useEffect(() => {
@@ -44,6 +48,14 @@ function App() {
     }
   }, []);
 
+  // Check if it's the user's first visit to show onboarding
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenOnboarding && isAuthenticated) {
+      setShowOnboarding(true);
+    }
+  }, [isAuthenticated]);
+
   // Update localStorage when state changes
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarState.collapsed));
@@ -55,6 +67,11 @@ function App() {
       ...prevState,
       ...newState
     }));
+  };
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    setShowOnboarding(false);
   };
 
   return (
@@ -95,6 +112,22 @@ function App() {
               }
             />
             <Route
+              path="/agents/:agentId"
+              element={
+                <PrivateRoute>
+                  <AgentDetailPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/agents/:agentId/publish"
+              element={
+                <PrivateRoute>
+                  <PublishAgentPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
               path="/settings"
               element={
                 <PrivateRoute>
@@ -114,6 +147,13 @@ function App() {
         </main>
       </div>
       <Footer />
+      
+      {/* Onboarding Modal */}
+      <OnboardingModal 
+        open={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+        onComplete={handleOnboardingComplete} 
+      />
     </div>
   );
 }

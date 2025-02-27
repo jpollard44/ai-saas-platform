@@ -7,22 +7,30 @@ const {
   deleteListing,
   createReview,
   getAgentReviews,
-  subscribeToAgent
+  subscribeToAgent,
+  getCategories,
+  getUserAcquiredAgents,
+  getUserPublishedAgents,
+  getFeaturedAgents
 } = require('../controllers/marketplaceController');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // Public routes
-router.get('/agents', getListings);
-router.get('/agents/:id', getListing);
-router.get('/agents/:id/reviews', getAgentReviews);
+router.get('/listings', getListings);
+router.get('/listings/:id', getListing);
+router.get('/reviews/:listingId', getAgentReviews);
+router.get('/categories', getCategories);
+router.get('/featured', getFeaturedAgents);
 
 // Protected routes
 router.post('/list', protect, listAgent);
-router.put('/agents/:id', protect, updateListing);
-router.delete('/agents/:id', protect, deleteListing);
-router.post('/reviews', protect, createReview);
-router.post('/agents/:id/subscribe', protect, subscribeToAgent);
+router.put('/listings/:id', protect, updateListing);
+router.delete('/listings/:id', protect, deleteListing);
+router.post('/review/:listingId', protect, createReview);
+router.post('/acquire/:listingId', protect, subscribeToAgent);
+router.get('/acquired', protect, getUserAcquiredAgents);
+router.get('/published', protect, getUserPublishedAgents);
 
 module.exports = router;

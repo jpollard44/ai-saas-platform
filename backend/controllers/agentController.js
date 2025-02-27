@@ -2,6 +2,7 @@ const Agent = require('../models/agentModel');
 const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
+const openaiService = require('../utils/openaiService');
 
 // Set up multer for file storage
 const storage = multer.diskStorage({
@@ -38,28 +39,67 @@ const upload = multer({
 // @access  Private
 exports.createAgent = async (req, res, next) => {
   try {
-    const { modelType, customizationOptions, name } = req.body;
+    const { 
+      name, 
+      description, 
+      modelId, 
+      templateId, 
+      instructions,
+      temperature, 
+      maxTokens,
+      enableWebSearch,
+      enableKnowledgeBase,
+      enableMemory,
+      visibility
+    } = req.body;
 
     // Validate required fields
-    if (!modelType || !name) {
+    if (!name || !description || !modelId || !instructions) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide model type and name'
+        error: 'Please provide all required fields: name, description, modelId, and instructions'
       });
     }
 
-    // Create new agent
-    const agent = await Agent.create({
+    // Create agent with all provided fields
+    const agentData = {
       userId: req.user.id,
-      modelType,
       name,
-      customizationOptions: customizationOptions || {}
-    });
+      description,
+      modelId,
+      instructions
+    };
+
+    // Add optional fields if they exist
+    if (templateId) agentData.templateId = templateId;
+    if (temperature !== undefined) agentData.temperature = temperature;
+    if (maxTokens !== undefined) agentData.maxTokens = maxTokens;
+    if (enableWebSearch !== undefined) agentData.enableWebSearch = enableWebSearch;
+    if (enableKnowledgeBase !== undefined) agentData.enableKnowledgeBase = enableKnowledgeBase;
+    if (enableMemory !== undefined) agentData.enableMemory = enableMemory;
+    if (visibility) agentData.visibility = visibility;
+
+    // Create new agent
+    const agent = await Agent.create(agentData);
+
+    // Optional: Test the agent with OpenAI if needed
+    let testResponse = null;
+    if (process.env.NODE_ENV !== 'test') {
+      try {
+        const testQuery = "Briefly introduce yourself based on your instructions.";
+        const result = await openaiService.runAgent(agent, testQuery);
+        testResponse = result.response;
+      } catch (err) {
+        console.error('Agent test error:', err);
+        // Don't fail the whole request if test fails
+      }
+    }
 
     res.status(201).json({
       success: true,
-      agentId: agent._id,
-      message: 'Agent ready!'
+      data: agent,
+      testResponse,
+      message: 'Agent created successfully!'
     });
   } catch (err) {
     next(err);
@@ -252,13 +292,6 @@ exports.runAgent = async (req, res, next) => {
     const { query } = req.body;
     const apiKey = req.headers['x-api-key'];
 
-    if (!apiKey) {
-      return res.status(401).json({
-        success: false,
-        error: 'API key is required'
-      });
-    }
-
     if (!query) {
       return res.status(400).json({
         success: false,
@@ -266,8 +299,8 @@ exports.runAgent = async (req, res, next) => {
       });
     }
 
-    // Get agent by ID
-    const agent = await Agent.findById(req.params.agentId).select('+apiKey');
+    // Find the agent
+    const agent = await Agent.findById(req.params.agentId);
 
     if (!agent) {
       return res.status(404).json({
@@ -276,46 +309,50 @@ exports.runAgent = async (req, res, next) => {
       });
     }
 
-    // Verify API key
-    if (agent.apiKey !== apiKey) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid API key'
-      });
+    // For private agents, verify API key
+    if (agent.visibility === 'private') {
+      // Get the agent with API key included
+      const agentWithKey = await Agent.findById(req.params.agentId).select('+apiKey');
+      
+      if (!apiKey || !agentWithKey.apiKey || apiKey !== agentWithKey.apiKey) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid API key'
+        });
+      }
     }
 
-    // Update usage statistics
+    // Start timing for response metrics
+    const startTime = Date.now();
+
+    // Process the query using OpenAI
+    const result = await openaiService.runAgent(agent, query);
+
+    // Calculate response time
+    const responseTime = Date.now() - startTime;
+
+    // Update agent stats
     agent.stats.usageCount += 1;
+    
+    // Update average response time
+    const currentAvg = agent.stats.averageResponseTime;
+    const newTotal = currentAvg * (agent.stats.usageCount - 1) + responseTime;
+    agent.stats.averageResponseTime = newTotal / agent.stats.usageCount;
+    
     await agent.save();
 
-    // Mock AI response based on agent's tone
-    let response;
-    switch (agent.customizationOptions?.tone) {
-      case 'friendly':
-        response = `Hi there! Here's a friendly response to your query: "${query}". Hope that helps!`;
-        break;
-      case 'professional':
-        response = `Thank you for your query: "${query}". Here is the professional response you requested.`;
-        break;
-      case 'casual':
-        response = `Hey! You asked: "${query}". Here's what I think...`;
-        break;
-      case 'formal':
-        response = `In response to your inquiry: "${query}", please find the following information.`;
-        break;
-      default:
-        response = `Response to query: "${query}"`;
-    }
-
+    // Return the response
     res.status(200).json({
       success: true,
-      response,
-      agent: {
-        name: agent.name,
-        modelType: agent.modelType
+      agentId: agent._id,
+      response: result.response,
+      stats: {
+        responseTime,
+        tokens: result.usage
       }
     });
   } catch (err) {
+    console.error('Agent run error:', err);
     next(err);
   }
 };

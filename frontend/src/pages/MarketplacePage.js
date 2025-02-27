@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { marketplaceService } from '../services/api';
+import { toast } from 'react-toastify';
 import './MarketplacePage.css';
 
 // Mock data for initial development
@@ -113,6 +115,9 @@ const mockAgents = [
   }
 ];
 
+// Fallback image for agents without images
+const DEFAULT_AGENT_IMAGE = '/images/agent-placeholder.png';
+
 const MarketplacePage = () => {
   const [agents, setAgents] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -120,26 +125,44 @@ const MarketplacePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Replace with actual API calls when backend is ready
     const fetchMarketplaceData = async () => {
       try {
-        // Simulate API delay
-        setTimeout(() => {
-          setAgents(mockAgents);
-          setCategories(mockCategories);
-          setLoading(false);
-        }, 1000);
+        setLoading(true);
         
-        // When API is ready:
-        // const agentsData = await marketplaceService.getAgents();
-        // const categoriesData = await marketplaceService.getCategories();
-        // setAgents(agentsData);
-        // setCategories(categoriesData);
+        // Get all marketplace listings
+        const listingsResponse = await marketplaceService.getListings();
+        
+        if (listingsResponse.data && listingsResponse.data.success) {
+          setAgents(listingsResponse.data.data);
+        } else {
+          // Fallback to mock data if API fails
+          setAgents(mockAgents);
+          console.warn('Using mock agent data due to API response format');
+        }
+        
+        // Get categories
+        const categoriesResponse = await marketplaceService.getCategories();
+        
+        if (categoriesResponse.data && categoriesResponse.data.success) {
+          setCategories(categoriesResponse.data.data);
+        } else {
+          // Fallback to mock categories if API fails
+          setCategories(mockCategories);
+          console.warn('Using mock category data due to API response format');
+        }
+        
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching marketplace data:', error);
+        setError('Failed to load marketplace data. Please try again later.');
+        // Fallback to mock data
+        setAgents(mockAgents);
+        setCategories(mockCategories);
         setLoading(false);
+        toast.error('Failed to load marketplace data');
       }
     };
 
@@ -188,6 +211,10 @@ const MarketplacePage = () => {
 
   if (loading) {
     return <div className="loading-container">Loading marketplace...</div>;
+  }
+
+  if (error) {
+    return <div className="error-container">{error}</div>;
   }
 
   return (
@@ -295,7 +322,7 @@ const MarketplacePage = () => {
                 {agents.filter(agent => agent.featured).map(agent => (
                   <Link to={`/marketplace/${agent.id}`} key={agent.id} className="featured-agent-card">
                     <div className="featured-agent-image">
-                      <img src={agent.image || '/images/agent-placeholder.png'} alt={agent.name} />
+                      <img src={agent.image || DEFAULT_AGENT_IMAGE} alt={agent.name} />
                       <div className="featured-badge">Featured</div>
                     </div>
                     <div className="featured-agent-content">
@@ -331,7 +358,7 @@ const MarketplacePage = () => {
               sortedAgents.map(agent => (
                 <Link to={`/marketplace/${agent.id}`} key={agent.id} className="agent-card">
                   <div className="agent-image">
-                    <img src={agent.image || '/images/agent-placeholder.png'} alt={agent.name} />
+                    <img src={agent.image || DEFAULT_AGENT_IMAGE} alt={agent.name} />
                   </div>
                   <div className="agent-content">
                     <h3>{agent.name}</h3>

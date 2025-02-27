@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { marketplaceService } from '../services/api';
+import { toast } from 'react-toastify';
 import './AgentDetailsPage.css';
 
 // Mock data for initial development
@@ -75,35 +77,96 @@ const mockAgent = {
   ]
 };
 
+const mockReviews = [
+  {
+    id: 1,
+    user: { id: 201, name: 'Sarah Johnson', image: '/images/users/user1.jpg' },
+    rating: 5,
+    date: '2023-06-10',
+    content: 'This agent has transformed our customer support operation. Response times down 80%, and customer satisfaction up 25%. Worth every penny!'
+  },
+  {
+    id: 2,
+    user: { id: 202, name: 'Michael Chen', image: '/images/users/user2.jpg' },
+    rating: 4,
+    date: '2023-05-22',
+    content: 'Very impressed with the natural conversations and how it handles complex inquiries. Occasional hiccups with very technical questions, but overall excellent.'
+  },
+  {
+    id: 3,
+    user: { id: 203, name: 'Emma Davis', image: '/images/users/user3.jpg' },
+    rating: 5,
+    date: '2023-05-15',
+    content: 'We integrated this with our existing knowledge base and the results were immediate. Our team now focuses on high-value interactions while the AI handles the routine stuff.'
+  }
+];
+
+const DEFAULT_AGENT_IMAGE = '/images/agent-placeholder.png';
+
 const AgentDetailsPage = () => {
   const { id } = useParams();
+  const { isAuthenticated, user } = useAuth();
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // Replace with actual API calls when backend is ready
     const fetchAgentDetails = async () => {
       try {
-        // Simulate API delay
-        setTimeout(() => {
-          setAgent(mockAgent);
-          setLoading(false);
-        }, 1000);
+        setLoading(true);
+        const response = await marketplaceService.getListing(id);
         
-        // When API is ready:
-        // const agentData = await marketplaceService.getAgentById(id);
-        // setAgent(agentData);
+        if (response.data && response.data.success) {
+          setAgent(response.data.data);
+        } else {
+          // Fallback to mock data if API fails
+          console.warn('Using mock data due to API response format');
+          setAgent(mockAgent);
+        }
       } catch (error) {
         console.error('Error fetching agent details:', error);
+        setError('Failed to load agent details. Please try again later.');
+        // Fallback to mock data for development
+        setAgent(mockAgent);
+        toast.error('Failed to load agent details');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchAgentDetails();
   }, [id]);
+
+  useEffect(() => {
+    // Fetch reviews when agent is loaded
+    if (agent && activeTab === 'reviews') {
+      const fetchReviews = async () => {
+        try {
+          setReviewsLoading(true);
+          const response = await marketplaceService.getAgentReviews(id);
+          
+          if (response.data && response.data.success) {
+            setReviews(response.data.data);
+          } else {
+            // For now, use mock reviews
+            setReviews(mockReviews);
+          }
+        } catch (error) {
+          console.error('Error fetching reviews:', error);
+          // For now, use mock reviews
+          setReviews(mockReviews);
+        } finally {
+          setReviewsLoading(false);
+        }
+      };
+
+      fetchReviews();
+    }
+  }, [agent, activeTab, id]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -136,7 +199,7 @@ const AgentDetailsPage = () => {
       <div className="agent-details-header">
         <div className="agent-details-hero">
           <div className="agent-details-image">
-            <img src={agent.image || '/images/agent-placeholder.png'} alt={agent.name} />
+            <img src={agent.image || DEFAULT_AGENT_IMAGE} alt={agent.name} />
           </div>
           <div className="agent-details-info">
             <h1>{agent.name}</h1>
@@ -320,7 +383,7 @@ const AgentDetailsPage = () => {
               </div>
               
               <div className="reviews-list">
-                {(showAllReviews ? agent.reviews : agent.reviews.slice(0, 5)).map(review => (
+                {(showAllReviews ? reviews : reviews.slice(0, 5)).map(review => (
                   <div key={review.id} className="review-card">
                     <div className="review-header">
                       <div className="reviewer-info">
@@ -344,7 +407,7 @@ const AgentDetailsPage = () => {
                   </div>
                 ))}
                 
-                {!showAllReviews && agent.reviews.length > 5 && (
+                {!showAllReviews && reviews.length > 5 && (
                   <button 
                     className="btn btn-outline btn-block"
                     onClick={() => setShowAllReviews(true)}

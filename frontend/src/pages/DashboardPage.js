@@ -1,50 +1,89 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { agentService, analyticsService } from '../services/api';
+import { toast } from 'react-toastify';
 import './DashboardPage.css';
 
-// Mock data for initial development
+// Fallback mock data if API call fails
 const mockAgents = [
-  { id: 1, name: 'Customer Support Bot', status: 'active', type: 'chatbot', usage: 1250, performance: 92 },
-  { id: 2, name: 'Data Analysis Assistant', status: 'inactive', type: 'analysis', usage: 450, performance: 88 },
-  { id: 3, name: 'Content Generator', status: 'active', type: 'generator', usage: 820, performance: 95 }
+  { _id: 1, name: 'Customer Support Bot', deploymentStatus: 'deployed', modelId: 'gpt-3.5-turbo', stats: { usageCount: 1250, averageResponseTime: 920 } },
+  { _id: 2, name: 'Data Analysis Assistant', deploymentStatus: 'draft', modelId: 'gpt-4', stats: { usageCount: 450, averageResponseTime: 1320 } },
+  { _id: 3, name: 'Content Generator', deploymentStatus: 'deployed', modelId: 'claude-2', stats: { usageCount: 820, averageResponseTime: 740 } }
 ];
-
-const mockAnalytics = {
-  totalUsage: 2520,
-  averagePerformance: 91,
-  topAgent: 'Content Generator',
-  recentActivity: [
-    { id: 1, type: 'Agent Created', agent: 'Content Generator', timestamp: '2023-06-12 14:30' },
-    { id: 2, type: 'Agent Deployed', agent: 'Customer Support Bot', timestamp: '2023-06-10 09:15' },
-    { id: 3, type: 'Agent Updated', agent: 'Data Analysis Assistant', timestamp: '2023-06-08 16:45' }
-  ]
-};
 
 const DashboardPage = () => {
   const [agents, setAgents] = useState([]);
-  const [analytics, setAnalytics] = useState({});
+  const [analytics, setAnalytics] = useState({
+    totalUsage: 0,
+    avgResponseTime: 0,
+    topAgentName: '',
+    topAgentUsage: 0
+  });
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    // Replace with actual API calls when backend is ready
     const fetchDashboardData = async () => {
       try {
-        // Simulate API delay
-        setTimeout(() => {
-          setAgents(mockAgents);
-          setAnalytics(mockAnalytics);
-          setLoading(false);
-        }, 1000);
+        // Fetch actual agents from API
+        const agentsResponse = await agentService.getAgents();
+        const fetchedAgents = agentsResponse.data.data || [];
         
-        // When API is ready:
-        // const agentsData = await agentService.getUserAgents();
-        // const analyticsData = await analyticsService.getDashboardStats();
-        // setAgents(agentsData);
-        // setAnalytics(analyticsData);
+        setAgents(fetchedAgents.length > 0 ? fetchedAgents : mockAgents);
+        
+        // Calculate analytics from agent data
+        if (fetchedAgents.length > 0) {
+          // Calculate total usage
+          const totalUsage = fetchedAgents.reduce(
+            (sum, agent) => sum + (agent.stats?.usageCount || 0), 0
+          );
+          
+          // Calculate average response time across all agents
+          const totalWithResponseTime = fetchedAgents.filter(
+            agent => agent.stats?.averageResponseTime > 0
+          ).length;
+          
+          const avgResponseTime = totalWithResponseTime > 0 ? 
+            fetchedAgents.reduce(
+              (sum, agent) => sum + (agent.stats?.averageResponseTime || 0), 0
+            ) / totalWithResponseTime : 0;
+          
+          // Find top agent by usage
+          let topAgent = { name: 'None', stats: { usageCount: 0 } };
+          fetchedAgents.forEach(agent => {
+            if ((agent.stats?.usageCount || 0) > (topAgent.stats?.usageCount || 0)) {
+              topAgent = agent;
+            }
+          });
+          
+          setAnalytics({
+            totalUsage,
+            avgResponseTime,
+            topAgentName: topAgent.name,
+            topAgentUsage: topAgent.stats?.usageCount || 0
+          });
+        }
+        
+        // Try to get analytics from backend if available
+        try {
+          const analyticsResponse = await analyticsService.getDashboardAnalytics();
+          if (analyticsResponse.data && analyticsResponse.data.success) {
+            setAnalytics(prev => ({
+              ...prev,
+              ...analyticsResponse.data.data
+            }));
+          }
+        } catch (error) {
+          console.warn('Using calculated analytics instead of API:', error);
+          // Continue with calculated analytics if API fails
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        toast.error('Failed to load dashboard data');
+        // Use mock data as fallback
+        setAgents(mockAgents);
+      } finally {
         setLoading(false);
       }
     };
@@ -53,14 +92,15 @@ const DashboardPage = () => {
   }, []);
 
   const handleAgentToggle = async (agentId, currentStatus) => {
-    // Replace with actual API calls when backend is ready
     try {
-      // Simulate API call
+      const newStatus = currentStatus === 'deployed' ? 'inactive' : 'deployed';
+      
+      // Optimistically update UI
       const updatedAgents = agents.map(agent => {
-        if (agent.id === agentId) {
+        if (agent._id === agentId) {
           return {
             ...agent,
-            status: currentStatus === 'active' ? 'inactive' : 'active'
+            deploymentStatus: newStatus
           };
         }
         return agent;
@@ -68,10 +108,25 @@ const DashboardPage = () => {
       
       setAgents(updatedAgents);
       
-      // When API is ready:
-      // await agentService.updateAgentStatus(agentId, { status: currentStatus === 'active' ? 'inactive' : 'active' });
+      // Update on the backend
+      await agentService.updateAgent(agentId, { deploymentStatus: newStatus });
+      toast.success(`Agent ${newStatus === 'deployed' ? 'deployed' : 'deactivated'} successfully`);
     } catch (error) {
       console.error('Error updating agent status:', error);
+      toast.error('Failed to update agent status');
+      
+      // Revert the optimistic update if API call fails
+      const originalAgents = agents.map(agent => {
+        if (agent._id === agentId) {
+          return {
+            ...agent,
+            deploymentStatus: currentStatus
+          };
+        }
+        return agent;
+      });
+      
+      setAgents(originalAgents);
     }
   };
 
@@ -101,153 +156,102 @@ const DashboardPage = () => {
               <p className="stat-label">API Calls</p>
             </div>
             <div className="stat-card">
-              <h3>Avg. Performance</h3>
-              <p className="stat-value">{analytics.averagePerformance || 0}%</p>
+              <h3>Avg Response Time</h3>
+              <p className="stat-value">
+                {analytics.avgResponseTime > 0 
+                  ? `${(analytics.avgResponseTime / 1000).toFixed(2)}s` 
+                  : 'N/A'}
+              </p>
             </div>
             <div className="stat-card">
               <h3>Top Agent</h3>
-              <p className="stat-value">{analytics.topAgent || 'N/A'}</p>
+              <p className="stat-value">{analytics.topAgentName || 'None'}</p>
+              <p className="stat-label">{analytics.topAgentUsage || 0} calls</p>
             </div>
           </div>
         </section>
 
-        {/* My Agents */}
-        <section className="my-agents">
+        {/* My Agents Section */}
+        <section className="dashboard-agents">
           <div className="section-header">
             <h2>My Agents</h2>
-            <Link to="/create-agent" className="btn btn-primary btn-sm">
-              Create New Agent
-            </Link>
+            <Link to="/create-agent" className="btn btn-primary">Create New Agent</Link>
           </div>
           
           {agents.length === 0 ? (
             <div className="empty-state">
               <p>You haven't created any agents yet.</p>
-              <Link to="/create-agent" className="btn btn-outline">
-                Create Your First Agent
-              </Link>
+              <Link to="/create-agent" className="btn btn-secondary">Create Your First Agent</Link>
             </div>
           ) : (
-            <div className="agents-table-container">
-              <table className="agents-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Usage</th>
-                    <th>Performance</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {agents.map(agent => (
-                    <tr key={agent.id}>
-                      <td>
-                        <Link to={`/agents/${agent.id}`}>{agent.name}</Link>
-                      </td>
-                      <td>
-                        <span className={`agent-type ${agent.type}`}>
-                          {agent.type.charAt(0).toUpperCase() + agent.type.slice(1)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${agent.status}`}>
-                          {agent.status === 'active' ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td>{agent.usage} calls</td>
-                      <td>
-                        <div className="performance-bar">
-                          <div 
-                            className="performance-fill" 
-                            style={{ width: `${agent.performance}%` }}
-                          ></div>
-                          <span>{agent.performance}%</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          <button 
-                            className={`btn btn-icon ${agent.status === 'active' ? 'btn-danger' : 'btn-success'}`}
-                            onClick={() => handleAgentToggle(agent.id, agent.status)}
-                          >
-                            <i className={`fas fa-${agent.status === 'active' ? 'pause' : 'play'}`}></i>
-                          </button>
-                          <Link to={`/agents/${agent.id}/edit`} className="btn btn-icon btn-secondary">
-                            <i className="fas fa-edit"></i>
-                          </Link>
-                          <Link to={`/agents/${agent.id}/analytics`} className="btn btn-icon btn-primary">
-                            <i className="fas fa-chart-line"></i>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="agent-cards">
+              {agents.map(agent => (
+                <div key={agent._id} className="agent-card">
+                  <div className="agent-card-header">
+                    <h3>{agent.name}</h3>
+                    <div className="agent-status">
+                      <span className={`status-indicator ${agent.deploymentStatus}`}></span>
+                      <span className="status-text">{agent.deploymentStatus}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="agent-card-model">
+                    <span className="model-badge">{agent.modelId}</span>
+                  </div>
+                  
+                  <p className="agent-description">
+                    {agent.description || 'No description provided.'}
+                  </p>
+                  
+                  <div className="agent-stats">
+                    <div className="agent-stat">
+                      <span className="stat-label">Usage</span>
+                      <span className="stat-value">{agent.stats?.usageCount || 0}</span>
+                    </div>
+                    <div className="agent-stat">
+                      <span className="stat-label">Response Time</span>
+                      <span className="stat-value">
+                        {agent.stats?.averageResponseTime > 0 
+                          ? `${(agent.stats.averageResponseTime / 1000).toFixed(2)}s` 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="agent-card-actions">
+                    <Link to={`/agents/${agent._id}`} className="btn btn-text">View Details</Link>
+                    <button
+                      className={`btn ${agent.deploymentStatus === 'deployed' ? 'btn-danger' : 'btn-success'}`}
+                      onClick={() => handleAgentToggle(agent._id, agent.deploymentStatus)}
+                    >
+                      {agent.deploymentStatus === 'deployed' ? 'Deactivate' : 'Deploy'}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
 
-        {/* Recent Activity */}
-        <section className="recent-activity">
-          <h2>Recent Activity</h2>
-          <ul className="activity-list">
-            {analytics.recentActivity && analytics.recentActivity.length > 0 ? (
-              analytics.recentActivity.map(activity => (
-                <li key={activity.id} className="activity-item">
-                  <div className="activity-icon">
-                    <i className={`fas fa-${
-                      activity.type === 'Agent Created' ? 'plus' :
-                      activity.type === 'Agent Deployed' ? 'rocket' :
-                      activity.type === 'Agent Updated' ? 'edit' : 'info'
-                    }`}></i>
-                  </div>
-                  <div className="activity-details">
-                    <p className="activity-title">{activity.type}</p>
-                    <p className="activity-subtitle">{activity.agent}</p>
-                    <p className="activity-time">{activity.timestamp}</p>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <li className="empty-activity">No recent activity</li>
-            )}
-          </ul>
-        </section>
-
         {/* Quick Actions */}
-        <section className="quick-actions">
+        <section className="dashboard-actions">
           <h2>Quick Actions</h2>
-          <div className="actions-grid">
-            <Link to="/create-agent" className="action-card">
-              <div className="action-icon">
-                <i className="fas fa-robot"></i>
-              </div>
-              <h3>Create Agent</h3>
-              <p>Build a new AI agent from scratch</p>
+          <div className="action-buttons">
+            <Link to="/create-agent" className="action-button">
+              <span className="action-icon">+</span>
+              <span>Create Agent</span>
             </Link>
-            <Link to="/templates" className="action-card">
-              <div className="action-icon">
-                <i className="fas fa-copy"></i>
-              </div>
-              <h3>Templates</h3>
-              <p>Start from a pre-built template</p>
+            <Link to="/marketplace" className="action-button">
+              <span className="action-icon">🛒</span>
+              <span>Browse Marketplace</span>
             </Link>
-            <Link to="/marketplace" className="action-card">
-              <div className="action-icon">
-                <i className="fas fa-store"></i>
-              </div>
-              <h3>Marketplace</h3>
-              <p>Browse agents from other creators</p>
+            <Link to="/documentation" className="action-button">
+              <span className="action-icon">📚</span>
+              <span>Documentation</span>
             </Link>
-            <Link to="/documentation" className="action-card">
-              <div className="action-icon">
-                <i className="fas fa-book"></i>
-              </div>
-              <h3>Documentation</h3>
-              <p>Learn how to build better agents</p>
+            <Link to="/profile" className="action-button">
+              <span className="action-icon">👤</span>
+              <span>Edit Profile</span>
             </Link>
           </div>
         </section>
