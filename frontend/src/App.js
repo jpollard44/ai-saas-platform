@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -28,12 +28,46 @@ import './App.css';
 
 function App() {
   const { isAuthenticated } = useAuth();
+  const [sidebarState, setSidebarState] = useState({
+    collapsed: false,
+    hovering: false
+  });
+
+  // Save sidebar state in localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null) {
+      setSidebarState(prev => ({
+        ...prev,
+        collapsed: JSON.parse(savedState)
+      }));
+    }
+  }, []);
+
+  // Update localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarState.collapsed));
+  }, [sidebarState.collapsed]);
+
+  // Handler for sidebar state changes
+  const handleSidebarStateChange = (newState) => {
+    setSidebarState(prevState => ({
+      ...prevState,
+      ...newState
+    }));
+  };
 
   return (
     <div className="app">
       <Navbar />
       <div className="main-container">
-        {isAuthenticated && <Sidebar />}
+        {isAuthenticated && (
+          <Sidebar 
+            collapsed={sidebarState.collapsed}
+            hovering={sidebarState.hovering}
+            onStateChange={handleSidebarStateChange}
+          />
+        )}
         <main className={`content ${isAuthenticated ? 'with-sidebar' : ''}`}>
           <Routes>
             {/* Public Routes */}
@@ -49,14 +83,6 @@ function App() {
               element={
                 <PrivateRoute>
                   <DashboardPage />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <PrivateRoute>
-                  <ProfilePage />
                 </PrivateRoute>
               }
             />
@@ -77,11 +103,11 @@ function App() {
               }
             />
             <Route
-              path="/profile/:username"
+              path="/profile"
               element={
-                <MainLayout>
+                <PrivateRoute>
                   <ProfilePage />
-                </MainLayout>
+                </PrivateRoute>
               }
             />
           </Routes>

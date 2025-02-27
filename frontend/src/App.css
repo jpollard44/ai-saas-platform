@@ -13,14 +13,30 @@
   flex: 1;
   padding: 20px;
   padding-top: 80px; /* Account for fixed navbar */
+  transition: margin-left 0.3s ease;
 }
 
 .content.with-sidebar {
   margin-left: 250px; /* Width of the sidebar */
 }
 
+/* Adjust content when sidebar is collapsed */
+.sidebar.collapsed ~ .content.with-sidebar {
+  margin-left: 60px; /* Width of collapsed sidebar */
+}
+
+/* Ensure content stays in place when sidebar is hovered in collapsed state */
+.sidebar.collapsed.hovered ~ .content.with-sidebar {
+  margin-left: 250px;
+}
+
 @media (max-width: 768px) {
   .content.with-sidebar {
+    margin-left: 0;
+  }
+  
+  .sidebar.collapsed ~ .content.with-sidebar,
+  .sidebar.collapsed.hovered ~ .content.with-sidebar {
     margin-left: 0;
   }
 }

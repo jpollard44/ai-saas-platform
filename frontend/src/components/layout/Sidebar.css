@@ -9,22 +9,73 @@
   display: flex;
   flex-direction: column;
   z-index: 900;
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* Collapsed sidebar styles */
+.sidebar.collapsed {
+  width: 60px;
+  overflow: hidden;
+}
+
+/* Hover effect when collapsed */
+.sidebar.collapsed.hovered {
+  width: 250px;
+  overflow: visible;
 }
 
 .sidebar-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .sidebar-header h3 {
   margin: 0;
   color: var(--primary-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-header h3 {
+  opacity: 0;
+  width: 0;
+}
+
+.sidebar.collapsed.hovered .sidebar-header h3 {
+  opacity: 1;
+  width: auto;
+}
+
+.collapse-toggle {
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.collapse-toggle:hover {
+  background-color: rgba(98, 0, 234, 0.1);
 }
 
 .sidebar-menu {
   list-style: none;
   padding: 0;
   flex: 1;
+  overflow-y: auto;
 }
 
 .sidebar-menu li {
@@ -32,11 +83,36 @@
 }
 
 .sidebar-menu li a {
-  display: block;
+  display: flex;
+  align-items: center;
   padding: 1rem 1.5rem;
   color: var(--text-primary);
   text-decoration: none;
   transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sidebar-menu li a .icon {
+  margin-right: 15px;
+  font-size: 1.2rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.sidebar-menu li a .text {
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-menu li a .text {
+  opacity: 0;
+  width: 0;
+  visibility: hidden;
+}
+
+.sidebar.collapsed.hovered .sidebar-menu li a .text {
+  opacity: 1;
+  width: auto;
+  visibility: visible;
 }
 
 .sidebar-menu li a:hover {
@@ -56,15 +132,26 @@
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.8rem;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  opacity: 0;
+}
+
+.sidebar.collapsed.hovered .sidebar-footer {
+  opacity: 1;
 }
 
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, width 0.3s ease;
   }
 
+  .sidebar.hovered, 
   .sidebar.open {
     transform: translateX(0);
+    width: 250px;
   }
 }
