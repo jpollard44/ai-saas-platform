@@ -118,31 +118,32 @@ const CreateAgentPage = () => {
 
   const nextStep = () => {
     try {
-      // If we're on the last step, don't proceed to a non-existent step
-      if (currentStep >= 5) {
-        console.log('Already on the last step, not proceeding further');
-        return;
-      }
+      console.log(`Validating step ${currentStep}`);
       
       // Validate current step before proceeding
       const isValid = validateStep();
       console.log(`Step ${currentStep} validation result: ${isValid}`);
       
       if (!isValid) {
-        console.log(`Cannot proceed from step ${currentStep} due to validation failure`);
-        toast.error('Please fill in all required fields before proceeding.');
+        console.log(`Validation failed for step ${currentStep}, not proceeding`);
+        toast.error('Please fill in all required fields correctly before proceeding.');
         return;
       }
       
-      // Log the current state for debugging
+      // Log the current form data for debugging
       console.log('Current form data:', JSON.stringify(formData));
       
-      // Proceed to next step
+      // If we're on the last step, don't go forward
+      if (currentStep >= 5) {
+        console.log('Already on the last step, not going forward');
+        return;
+      }
+      
       console.log(`Moving from step ${currentStep} to step ${currentStep + 1}`);
-      setCurrentStep(prevStep => prevStep + 1);
+      setCurrentStep(currentStep + 1);
       window.scrollTo(0, 0);
     } catch (error) {
-      console.error('Error in nextStep function:', error);
+      console.error('Error in nextStep:', error);
       toast.error('An error occurred while navigating to the next step.');
     }
   };
@@ -162,8 +163,19 @@ const CreateAgentPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log('Already submitting, ignoring duplicate submission');
+      return;
+    }
     
+    // Validate the current step before submission
+    if (!validateStep()) {
+      console.log('Final validation failed, not submitting');
+      toast.error('Please fill in all required fields correctly before submitting.');
+      return;
+    }
+    
+    console.log('Form submission initiated by user');
     setIsSubmitting(true);
     setSubmitError(null);
     
