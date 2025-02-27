@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userService, agentService } from '../services/api-proxy';
 import './ProfilePage.css';
@@ -13,21 +13,29 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('agents');
   const [activeFilter, setActiveFilter] = useState('all');
   const { currentUser, updateUser } = useAuth();
+  const navigate = useNavigate();
 
   const fetchProfileData = async () => {
     try {
       setIsLoading(true);
       
-      // Fetch user profile data
-      const userResponse = await userService.getProfile(username);
+      // Check if we have a current user
+      if (!currentUser || !currentUser.id) {
+        setError('You must be logged in to view this profile');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Fetch user profile data using the current user's ID
+      const userResponse = await userService.getProfile(currentUser.id);
       if (userResponse.data && userResponse.data.success) {
-        setUser(userResponse.data.data);
+        setUser(userResponse.data);
       } else {
         setError('Failed to load profile data');
       }
       
       // Fetch user's agents
-      const agentsResponse = await agentService.getAgents(username);
+      const agentsResponse = await agentService.getAgents();
       if (agentsResponse.data && agentsResponse.data.success) {
         setAgents(agentsResponse.data.data || []);
       } else {
@@ -53,7 +61,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchProfileData();
-  }, [username]);
+  }, [currentUser]);
 
   if (isLoading) {
     return (

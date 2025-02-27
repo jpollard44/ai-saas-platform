@@ -30,13 +30,43 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        // Here we would normally make a request to the backend to get user data
-        // For now, we'll just use the token to indicate authenticated status
-        setIsAuthenticated(true);
+        // Get user ID from localStorage
+        const userId = localStorage.getItem('userId');
+        
+        if (userId) {
+          setUser({
+            id: userId,
+            // Other user data can be fetched from the backend if needed
+          });
+          setIsAuthenticated(true);
+        } else {
+          // If we have a token but no userId, try to verify the token
+          try {
+            const response = await axios.get('/api/users/verify-token');
+            if (response.data && response.data.success) {
+              // Store the user ID
+              localStorage.setItem('userId', response.data.user.id);
+              setUser({
+                id: response.data.user.id,
+                name: response.data.user.name,
+                email: response.data.user.email
+              });
+              setIsAuthenticated(true);
+            }
+          } catch (verifyError) {
+            console.error('Token verification failed:', verifyError);
+            localStorage.removeItem('token');
+            setToken(null);
+            setIsAuthenticated(false);
+          }
+        }
+        
         setLoading(false);
       } catch (err) {
         localStorage.removeItem('token');
+        localStorage.removeItem('userId');
         setToken(null);
+        setUser(null);
         setIsAuthenticated(false);
         setError(err.response?.data?.error || 'An error occurred');
         setLoading(false);
@@ -54,6 +84,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await axios.post('/api/users/register', userData);
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem('userId', res.data.userId);
       setToken(res.data.token);
       setUser({ id: res.data.userId });
       setIsAuthenticated(true);
@@ -74,6 +105,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await axios.post('/api/users/login', userData);
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem('userId', res.data.userId);
       setToken(res.data.token);
       setUser({ id: res.data.userId });
       setIsAuthenticated(true);
@@ -89,6 +121,7 @@ export const AuthProvider = ({ children }) => {
   // Logout user
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
