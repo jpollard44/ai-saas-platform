@@ -1,0 +1,28 @@
+{
+  "name": "ai-saas-platform",
+  "version": "1.0.0",
+  "description": "AI-driven SaaS platform for creating, deploying, and monetizing intelligent agents",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "server": "nodemon backend/server.js",
+    "client": "npm start --prefix frontend",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend",
+    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
+  },
+  "keywords": [
+    "ai",
+    "saas",
+    "platform",
+    "marketplace"
+  ],
+  "author": "Jordan Pollard",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -96,16 +96,27 @@ npm start
 
 This project is configured for deployment on Render using MongoDB Atlas as the database provider.
 
-### Quick Deployment
+### Render Deployment Steps
 
-1. Make sure your code is pushed to GitHub
-2. Run the deployment script:
-```bash
-./deploy-to-render.sh
-```
-3. Follow the instructions provided by the script
+1. Push your code to GitHub
+2. Create a new Web Service on Render
+   - Connect your GitHub repository
+   - Select the branch to deploy
+   - Set the build command: `npm run build`
+   - Set the start command: `npm start`
+   - Select the appropriate instance type (Free tier works for testing)
 
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+3. Add Environment Variables in Render:
+   - `NODE_ENV`: production
+   - `PORT`: 10000 (Render will use this internally)
+   - `MONGO_URI`: Your MongoDB Atlas connection string
+   - `JWT_SECRET`: Your JWT secret key
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `STRIPE_API_KEY`: Your Stripe API key
+
+4. Deploy the service and wait for the build to complete
+
+Your application will be available at the URL provided by Render (typically `https://your-app-name.onrender.com`).
 
 ## Database
 

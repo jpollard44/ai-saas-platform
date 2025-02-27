@@ -77,7 +77,7 @@ exports.listAgent = async (req, res, next) => {
 };
 
 // @desc    Get all marketplace listings
-// @route   GET /api/marketplace/agents
+// @route   GET /api/marketplace/listings
 // @access  Public
 exports.getListings = async (req, res, next) => {
   try {
@@ -117,7 +117,7 @@ exports.getListings = async (req, res, next) => {
 };
 
 // @desc    Get single marketplace listing
-// @route   GET /api/marketplace/agents/:id
+// @route   GET /api/marketplace/listings/:id
 // @access  Public
 exports.getListing = async (req, res, next) => {
   try {
@@ -142,7 +142,7 @@ exports.getListing = async (req, res, next) => {
 };
 
 // @desc    Update a marketplace listing
-// @route   PUT /api/marketplace/agents/:id
+// @route   PUT /api/marketplace/listings/:id
 // @access  Private
 exports.updateListing = async (req, res, next) => {
   try {
@@ -183,7 +183,7 @@ exports.updateListing = async (req, res, next) => {
 };
 
 // @desc    Delete a marketplace listing
-// @route   DELETE /api/marketplace/agents/:id
+// @route   DELETE /api/marketplace/listings/:id
 // @access  Private
 exports.deleteListing = async (req, res, next) => {
   try {
@@ -224,17 +224,17 @@ exports.deleteListing = async (req, res, next) => {
 };
 
 // @desc    Create a review for an agent
-// @route   POST /api/marketplace/reviews
+// @route   POST /api/marketplace/review/:listingId
 // @access  Private
 exports.createReview = async (req, res, next) => {
   try {
-    const { agentId, rating, comment } = req.body;
+    const { rating, comment } = req.body;
 
     // Validate input
-    if (!agentId || !rating || !comment) {
+    if (!rating || !comment) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide agentId, rating and comment'
+        error: 'Please provide rating and comment'
       });
     }
 
@@ -246,7 +246,7 @@ exports.createReview = async (req, res, next) => {
     }
 
     // Find the listing for this agent
-    const listing = await MarketplaceListing.findOne({ agentId });
+    const listing = await MarketplaceListing.findById(req.params.listingId);
 
     if (!listing) {
       return res.status(404).json({
@@ -258,7 +258,7 @@ exports.createReview = async (req, res, next) => {
     // Check if user already reviewed this agent
     const alreadyReviewed = await Review.findOne({
       userId: req.user.id,
-      agentId,
+      agentId: listing.agentId,
       listingId: listing._id
     });
 
@@ -272,7 +272,7 @@ exports.createReview = async (req, res, next) => {
     // Create review
     const review = await Review.create({
       userId: req.user.id,
-      agentId,
+      agentId: listing.agentId,
       listingId: listing._id,
       rating,
       comment
@@ -297,11 +297,11 @@ exports.createReview = async (req, res, next) => {
 };
 
 // @desc    Get reviews for an agent
-// @route   GET /api/marketplace/agents/:id/reviews
+// @route   GET /api/marketplace/reviews/:listingId
 // @access  Public
 exports.getAgentReviews = async (req, res, next) => {
   try {
-    const listing = await MarketplaceListing.findById(req.params.id);
+    const listing = await MarketplaceListing.findById(req.params.listingId);
 
     if (!listing) {
       return res.status(404).json({
@@ -325,11 +325,11 @@ exports.getAgentReviews = async (req, res, next) => {
 };
 
 // @desc    Subscribe to an agent (mock implementation)
-// @route   POST /api/marketplace/agents/:id/subscribe
+// @route   POST /api/marketplace/acquire/:listingId
 // @access  Private
 exports.subscribeToAgent = async (req, res, next) => {
   try {
-    const listing = await MarketplaceListing.findById(req.params.id);
+    const listing = await MarketplaceListing.findById(req.params.listingId);
 
     if (!listing) {
       return res.status(404).json({

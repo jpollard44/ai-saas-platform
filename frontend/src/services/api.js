@@ -1,8 +1,17 @@
 import axios from 'axios';
 
+// Determine the base URL based on environment
+const getBaseUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return '/api'; // In production, the API is served from the same domain
+  } else {
+    return '/api'; // In development, we use the proxy in package.json
+  }
+};
+
 // Create an axios instance with default config
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -235,7 +244,7 @@ export const marketplaceService = {
   getListing: (listingId) => api.get(`/marketplace/listings/${listingId}`),
   updateListing: (listingId, listingData) => api.put(`/marketplace/listings/${listingId}`, listingData),
   deleteListing: (listingId) => api.delete(`/marketplace/listings/${listingId}`),
-  createReview: (listingId, reviewData) => api.post(`/marketplace/reviews/${listingId}`, reviewData),
+  createReview: (listingId, reviewData) => api.post(`/marketplace/review/${listingId}`, reviewData),
   getAgentReviews: (listingId, page = 1, limit = 10) => api.get(`/marketplace/reviews/${listingId}?page=${page}&limit=${limit}`),
   getCategories: () => api.get('/marketplace/categories'),
   getUserAcquiredAgents: () => api.get('/marketplace/acquired'),
