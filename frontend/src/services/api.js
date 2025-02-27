@@ -270,6 +270,15 @@ export const marketplaceService = {
   getFeaturedAgents: () => api.get('/marketplace/featured')
 };
 
+// Payment API services
+export const paymentService = {
+  createCheckoutSession: (data) => api.post('/payments/create-checkout-session', data),
+  getPaymentHistory: () => api.get('/payments/history'),
+  getEarnings: () => api.get('/payments/earnings'),
+  withdrawEarnings: (data) => api.post('/payments/withdraw', data),
+  updatePaymentMethod: (data) => api.put('/payments/method', data),
+};
+
 // Analytics API services
 export const analyticsService = {
   getAgentAnalytics: (agentId) => api.get(`/analytics/${agentId}`),
