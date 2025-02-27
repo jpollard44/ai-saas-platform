@@ -41,28 +41,42 @@ if (process.env.NODE_ENV === 'development') {
 
 // Security middleware
 // Enable CORS for all environments
+const corsOrigin = process.env.CORS_ORIGIN || '*';
+const corsMethods = process.env.CORS_METHODS || 'GET,POST,PUT,DELETE,PATCH,OPTIONS';
+const corsHeaders = process.env.CORS_ALLOWED_HEADERS || 'Content-Type,Authorization,X-Requested-With';
+
+console.log('CORS Configuration:');
+console.log('- Origin:', corsOrigin);
+console.log('- Methods:', corsMethods);
+console.log('- Headers:', corsHeaders);
+
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  origin: corsOrigin,
+  methods: corsMethods.split(','),
+  allowedHeaders: corsHeaders.split(','),
   credentials: true
 }));
 
-console.log('CORS enabled for all origins (debugging mode)');
+console.log('CORS enabled with configuration above');
 
 // Add OPTIONS handling for preflight requests
-app.options('*', cors());
+app.options('*', cors({
+  origin: corsOrigin,
+  methods: corsMethods.split(','),
+  allowedHeaders: corsHeaders.split(','),
+  credentials: true
+}));
 
 // Add explicit CORS headers for all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Origin', corsOrigin);
+  res.header('Access-Control-Allow-Methods', corsMethods);
+  res.header('Access-Control-Allow-Headers', corsHeaders);
   res.header('Access-Control-Max-Age', '86400'); // 24 hours
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request');
+    console.log('Handling OPTIONS preflight request from:', req.headers.origin);
     return res.status(200).end();
   }
   
@@ -121,6 +135,22 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  console.log('Health check requested from:', req.headers.origin || 'Unknown origin');
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    cors: {
+      origin: corsOrigin,
+      methods: corsMethods,
+      headers: corsHeaders
+    }
+  });
+});
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {

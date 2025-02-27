@@ -11,3 +11,15 @@ OPENAI_API_KEY=your_openai_api_key
 STRIPE_API_KEY=your_stripe_api_key
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+
+# CORS Configuration - Critical for API Access
+CORS_ENABLED=true
+CORS_ORIGIN=https://ai-saas-platform-web.onrender.com
+CORS_METHODS=GET,POST,PUT,DELETE,PATCH,OPTIONS
+CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
+
+# Important: Make sure your backend service has the following settings in Render:
+# 1. Environment Variable Group: Make sure all variables are set
+# 2. Health Check Path: /api/health
+# 3. Auto-Deploy: Enabled
+# 4. Branch: main
