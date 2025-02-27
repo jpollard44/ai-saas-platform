@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input {
+            padding: 8px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS Test Tool</h1>
+    
+    <div>
+        <h2>Test Configuration</h2>
+        <div>
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="https://ai-saas-platform-api.onrender.com/api/health" />
+        </div>
+        <div>
+            <label for="token">JWT Token (optional):</label>
+            <input type="text" id="token" placeholder="Bearer token..." />
+        </div>
+    </div>
+    
+    <div>
+        <h2>Test Actions</h2>
+        <button onclick="testGet()">Test GET</button>
+        <button onclick="testOptions()">Test OPTIONS (Preflight)</button>
+        <button onclick="testPost()">Test POST</button>
+    </div>
+    
+    <div>
+        <h2>Results</h2>
+        <div id="result" class="result">Results will appear here...</div>
+    </div>
+    
+    <script>
+        // Helper function to display results
+        function displayResult(title, data) {
+            const resultDiv = document.getElementById('result');
+            let content = `${title}\n\n`;
+            
+            if (typeof data === 'object') {
+                content += JSON.stringify(data, null, 2);
+            } else {
+                content += data;
+            }
+            
+            resultDiv.textContent = content;
+        }
+        
+        // Helper function to get API URL
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
+        
+        // Helper function to get token
+        function getToken() {
+            return document.getElementById('token').value;
+        }
+        
+        // Test GET request
+        function testGet() {
+            const url = getApiUrl();
+            const token = getToken();
+            
+            displayResult(`Testing GET request to ${url}...`, 'Sending request...');
+            
+            const headers = new Headers();
+            headers.append('Content-Type', 'application/json');
+            
+            if (token) {
+                headers.append('Authorization', token.startsWith('Bearer ') ? token : `Bearer ${token}`);
+            }
+            
+            fetch(url, {
+                method: 'GET',
+                headers: headers,
+                mode: 'cors'
+            })
+            .then(response => {
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {}
+                };
+                
+                // Get headers
+                for (const [key, value] of response.headers.entries()) {
+                    result.headers[key] = value;
+                }
+                
+                return response.text().then(text => {
+                    try {
+                        result.data = JSON.parse(text);
+                    } catch (e) {
+                        result.data = text;
+                    }
+                    return result;
+                });
+            })
+            .then(result => {
+                displayResult(`GET Response (${result.status}):`, result);
+            })
+            .catch(error => {
+                displayResult('GET Error:', error.toString());
+                console.error('Error:', error);
+            });
+        }
+        
+        // Test OPTIONS request (preflight)
+        function testOptions() {
+            const url = getApiUrl();
+            
+            displayResult(`Testing OPTIONS request to ${url}...`, 'Sending request...');
+            
+            fetch(url, {
+                method: 'OPTIONS',
+                headers: {
+                    'Access-Control-Request-Method': 'GET',
+                    'Access-Control-Request-Headers': 'Content-Type, Authorization',
+                    'Origin': window.location.origin
+                },
+                mode: 'cors'
+            })
+            .then(response => {
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {}
+                };
+                
+                // Get headers
+                for (const [key, value] of response.headers.entries()) {
+                    result.headers[key] = value;
+                }
+                
+                return result;
+            })
+            .then(result => {
+                displayResult(`OPTIONS Response (${result.status}):`, result);
+            })
+            .catch(error => {
+                displayResult('OPTIONS Error:', error.toString());
+                console.error('Error:', error);
+            });
+        }
+        
+        // Test POST request
+        function testPost() {
+            const url = getApiUrl();
+            const token = getToken();
+            
+            displayResult(`Testing POST request to ${url}...`, 'Sending request...');
+            
+            const headers = new Headers();
+            headers.append('Content-Type', 'application/json');
+            
+            if (token) {
+                headers.append('Authorization', token.startsWith('Bearer ') ? token : `Bearer ${token}`);
+            }
+            
+            fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ test: true, timestamp: new Date().toISOString() }),
+                mode: 'cors'
+            })
+            .then(response => {
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: {}
+                };
+                
+                // Get headers
+                for (const [key, value] of response.headers.entries()) {
+                    result.headers[key] = value;
+                }
+                
+                return response.text().then(text => {
+                    try {
+                        result.data = JSON.parse(text);
+                    } catch (e) {
+                        result.data = text;
+                    }
+                    return result;
+                });
+            })
+            .then(result => {
+                displayResult(`POST Response (${result.status}):`, result);
+            })
+            .catch(error => {
+                displayResult('POST Error:', error.toString());
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

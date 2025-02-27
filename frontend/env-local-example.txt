@@ -1,0 +1,13 @@
+# Frontend environment variables example
+# Copy this file to .env.local for local development
+
+# API URL configuration
+# Use the CORS proxy for local development
+REACT_APP_API_URL=http://localhost:8080/proxy
+
+# For production, use the actual API URL
+# REACT_APP_API_URL=https://ai-saas-platform-api.onrender.com/api
+
+# Other configuration
+REACT_APP_ENABLE_MOCKS=false
+REACT_APP_DEBUG_MODE=true
