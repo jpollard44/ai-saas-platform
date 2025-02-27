@@ -19,6 +19,8 @@ This guide explains how to deploy the CORS proxy as a separate service on Render
 
 ## Deploying to Render
 
+### Option 1: Using the Deployment Script (Recommended)
+
 1. **Create a new Web Service on Render**
 
    - Go to your Render dashboard
@@ -27,25 +29,49 @@ This guide explains how to deploy the CORS proxy as a separate service on Render
    - Configure the service:
      - **Name**: `ai-saas-platform-cors-proxy`
      - **Root Directory**: `backend`
-     - **Build Command**: `npm install --production`
+     - **Build Command**: `chmod +x deploy-proxy.sh && ./deploy-proxy.sh`
      - **Start Command**: `node render-cors-proxy.js`
      - **Environment**: `Node`
      - **Plan**: Free (or higher if needed)
+     - **Environment Variables**:
+       - `PORT`: `10000`
+       - `TARGET_API`: `https://ai-saas-platform-api.onrender.com/api`
 
-2. **Set Environment Variables**
-
-   Add these environment variables:
-   ```
-   PORT=10000
-   TARGET_API=https://ai-saas-platform-api.onrender.com/api
-   ```
-
-3. **Deploy the Service**
+2. **Deploy the Service**
 
    - Click "Create Web Service"
    - Wait for the deployment to complete
 
-4. **Update Frontend to Use the Proxy**
+3. **Update Frontend to Use the Proxy**
+
+   Once deployed, update your frontend environment variables:
+   ```
+   REACT_APP_API_URL=https://ai-saas-platform-cors-proxy.onrender.com/proxy
+   ```
+
+### Option 2: Manual Deployment
+
+If the deployment script doesn't work for any reason, you can manually configure the service:
+
+1. **Create a new Web Service on Render**
+
+   - Go to your Render dashboard
+   - Click "New" > "Web Service"
+   - Connect your GitHub repository
+   - Configure the service:
+     - **Name**: `ai-saas-platform-cors-proxy`
+     - **Root Directory**: `backend`
+     - **Build Command**: `cp package-proxy.json package.json && npm install --production`
+     - **Start Command**: `node render-cors-proxy.js`
+     - **Environment**: `Node`
+     - **Plan**: Free (or higher if needed)
+     - **Environment Variables**:
+       - `PORT`: `10000`
+       - `TARGET_API`: `https://ai-saas-platform-api.onrender.com/api`
+
+2. **Deploy the service**
+
+3. **Update Frontend to Use the Proxy**
 
    Once deployed, update your frontend environment variables:
    ```
