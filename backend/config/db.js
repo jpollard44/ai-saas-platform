@@ -2,33 +2,48 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    // Use a local MongoDB instance for testing
-    const localMongoURI = 'mongodb://localhost:27017/ai-saas-platform';
+    const mongoURI = process.env.MONGO_URI;
     
-    const conn = await mongoose.connect(process.env.MONGO_URI || localMongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    return conn;
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    
-    // If we can't connect to the specified MongoDB, try connecting to a local instance
-    try {
-      console.log('Trying to connect to local MongoDB instance...');
-      const localMongoURI = 'mongodb://localhost:27017/ai-saas-platform';
-      const conn = await mongoose.connect(localMongoURI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-      });
-      console.log(`MongoDB Connected (local): ${conn.connection.host}`);
-      return conn;
-    } catch (localError) {
-      console.error(`Error connecting to local MongoDB: ${localError.message}`);
+    if (!mongoURI) {
+      console.error('MongoDB URI is not defined. Please check your environment variables.');
       process.exit(1);
     }
+    
+    const options = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      family: 4 // Use IPv4, skip trying IPv6
+    };
+
+    const conn = await mongoose.connect(mongoURI, options);
+    
+    console.log(`MongoDB Connected: ${conn.connection.host}`.cyan.underline);
+    
+    // Add connection event listeners
+    mongoose.connection.on('error', err => {
+      console.error(`MongoDB connection error: ${err}`.red);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.log('MongoDB disconnected'.yellow);
+      // Attempt to reconnect if disconnected
+      setTimeout(connectDB, 5000);
+    });
+    
+    process.on('SIGINT', async () => {
+      await mongoose.connection.close();
+      console.log('MongoDB connection closed due to app termination'.yellow);
+      process.exit(0);
+    });
+    
+    return conn;
+  } catch (err) {
+    console.error(`Error connecting to MongoDB: ${err.message}`.red);
+    // Exit with failure
+    process.exit(1);
   }
 };
 

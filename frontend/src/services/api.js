@@ -1,23 +1,18 @@
 import axios from 'axios';
 
-// Determine the base URL based on environment
-const getBaseUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return '/api'; // In production, the API is served from the same domain
-  } else {
-    return '/api'; // In development, we use the proxy in package.json
-  }
-};
+// Create axios instance with base URL
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5000/api';
 
-// Create an axios instance with default config
 const api = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Add interceptor to add auth token to requests
+// Add request interceptor to include auth token in requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -26,25 +21,25 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Add response interceptor to handle errors
+// Add response interceptor to handle common errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
+    // Handle token expiration
+    if (error.response && error.response.status === 401) {
+      // Clear token and redirect to login if unauthorized
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
     
-    // Check if error is due to server unavailability
-    if (!error.response) {
-      console.log('Using mock data due to server unavailability');
-      // Return mock success response for development when backend is not available
-      return Promise.resolve({
-        data: {
-          success: true,
-          data: getMockData(error.config.url, error.config.method)
-        }
-      });
+    // Handle server errors
+    if (error.response && error.response.status >= 500) {
+      console.error('Server error:', error.response.data);
     }
     
     return Promise.reject(error);
@@ -196,6 +191,28 @@ function getMockData(url, method) {
   // Default empty array
   return [];
 }
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error);
+    
+    // Check if error is due to server unavailability
+    if (!error.response) {
+      console.log('Using mock data due to server unavailability');
+      // Return mock success response for development when backend is not available
+      return Promise.resolve({
+        data: {
+          success: true,
+          data: getMockData(error.config.url, error.config.method)
+        }
+      });
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // User API services
 export const userService = {

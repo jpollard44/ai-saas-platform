@@ -9,7 +9,8 @@
     "client": "npm start --prefix frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend",
-    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"
+    "render-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend",
+    "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend"
   },
   "keywords": [
     "ai",
@@ -20,9 +21,11 @@
   "author": "Jordan Pollard",
   "license": "MIT",
   "dependencies": {
-    "concurrently": "^7.0.0"
+    "concurrently": "^7.0.0",
+    "dotenv": "^16.0.0"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

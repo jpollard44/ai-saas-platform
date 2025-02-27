@@ -1,95 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { userService, agentService } from '../services/api';
 import './ProfilePage.css';
-
-// Mock data for development
-const MOCK_USER = {
-  id: 'user123',
-  name: 'Alexandra Chen',
-  username: 'alexchen',
-  avatarUrl: 'https://via.placeholder.com/150',
-  bio: 'AI Engineer and Prompt Designer | Creating specialized agents for data analysis and creative writing | Previously @ OpenAI',
-  website: 'https://alexchen.dev',
-  twitter: '@alexchenai',
-  location: 'San Francisco, CA',
-  joinDate: 'January 2023',
-  followers: 1204,
-  following: 352,
-  stats: {
-    createdAgents: 28,
-    totalSales: 3450,
-    topCategory: 'Data Analysis'
-  }
-};
-
-const MOCK_AGENTS = [
-  {
-    id: 'agent1',
-    name: 'DataMiner Pro',
-    description: 'Advanced data analysis and visualization agent with ML capabilities',
-    imageUrl: 'https://via.placeholder.com/300',
-    category: 'Data Analysis',
-    price: '$49.99',
-    rating: 4.8,
-    reviewCount: 124,
-    featured: true
-  },
-  {
-    id: 'agent2',
-    name: 'Content Wizard',
-    description: 'Intelligent content creation assistant for blogs, social media, and more',
-    imageUrl: 'https://via.placeholder.com/300',
-    category: 'Content Creation',
-    price: '$39.99',
-    rating: 4.7,
-    reviewCount: 98,
-    featured: true
-  },
-  {
-    id: 'agent3',
-    name: 'CodeAssist',
-    description: 'Coding assistant that helps write, debug, and optimize code',
-    imageUrl: 'https://via.placeholder.com/300',
-    category: 'Development',
-    price: '$59.99',
-    rating: 4.9,
-    reviewCount: 156,
-    featured: false
-  },
-  {
-    id: 'agent4',
-    name: 'Research Companion',
-    description: 'Academic research assistant for literature review, citation, and analysis',
-    imageUrl: 'https://via.placeholder.com/300',
-    category: 'Research',
-    price: '$29.99',
-    rating: 4.6,
-    reviewCount: 87,
-    featured: false
-  },
-  {
-    id: 'agent5',
-    name: 'Finance Advisor',
-    description: 'Personal finance and investment advisor with real-time market insights',
-    imageUrl: 'https://via.placeholder.com/300',
-    category: 'Finance',
-    price: '$49.99',
-    rating: 4.5,
-    reviewCount: 72,
-    featured: false
-  },
-  {
-    id: 'agent6',
-    name: 'Design Assistant',
-    description: 'AI-powered design assistant for UI/UX and graphic design',
-    imageUrl: 'https://via.placeholder.com/300',
-    category: 'Design',
-    price: '$45.99',
-    rating: 4.7,
-    reviewCount: 91,
-    featured: false
-  }
-];
 
 const ProfilePage = () => {
   const { username } = useParams();
@@ -99,14 +12,36 @@ const ProfilePage = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('agents');
   const [activeFilter, setActiveFilter] = useState('all');
+  const { currentUser, updateUser } = useAuth();
 
   useEffect(() => {
-    // In a real app, fetch data from API
-    setTimeout(() => {
-      setUser(MOCK_USER);
-      setAgents(MOCK_AGENTS);
-      setIsLoading(false);
-    }, 800);
+    const fetchProfileData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch user profile data
+        const userResponse = await userService.getUserProfile(username);
+        if (userResponse.data && userResponse.data.success) {
+          setUser(userResponse.data.data);
+        } else {
+          setError('Failed to load profile data');
+        }
+        
+        // Fetch user's agents
+        const agentsResponse = await agentService.getAgents(username);
+        if (agentsResponse.data && agentsResponse.data.success) {
+          setAgents(agentsResponse.data.data || []);
+        } else {
+          setError('Failed to load agents');
+        }
+      } catch (error) {
+        setError('Error fetching profile data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfileData();
   }, [username]);
 
   if (isLoading) {
@@ -181,7 +116,7 @@ const ProfilePage = () => {
 
       <div className="profile-agents-grid">
         {filteredAgents.map(agent => (
-          <div key={agent.id} className="profile-agent-card">
+          <div key={agent._id} className="profile-agent-card">
             <div className="profile-agent-image">
               <img src={agent.imageUrl} alt={agent.name} />
               {agent.featured && <span className="featured-badge">Featured</span>}
@@ -221,71 +156,35 @@ const ProfilePage = () => {
       <div className="profile-about-section">
         <h2>About {user.name}</h2>
         <p className="profile-long-bio">
-          Alexandra Chen is a renowned AI Engineer and Prompt Designer with over 8 years of experience in the field. 
-          She specializes in creating intelligent agents for data analysis, natural language processing, and creative 
-          content generation.
-        </p>
-        <p className="profile-long-bio">
-          Before launching her own suite of AI agents, Alexandra worked at OpenAI, where she contributed to several 
-          groundbreaking projects. She holds a Ph.D. in Computer Science from Stanford University, with a focus on 
-          machine learning and natural language processing.
-        </p>
-        <p className="profile-long-bio">
-          Alexandra's agents have been used by thousands of professionals worldwide, helping them automate tasks, 
-          gain insights from data, and enhance their creative workflows.
+          {user.bio}
         </p>
       </div>
 
       <div className="profile-about-section">
         <h2>Expertise</h2>
         <div className="profile-expertise-grid">
-          <div className="expertise-item">
-            <i className="fas fa-chart-bar"></i>
-            <h3>Data Analysis</h3>
-            <p>Creating agents that process, analyze, and visualize complex datasets</p>
-          </div>
-          <div className="expertise-item">
-            <i className="fas fa-code"></i>
-            <h3>AI Development</h3>
-            <p>Building custom AI models and agents with state-of-the-art capabilities</p>
-          </div>
-          <div className="expertise-item">
-            <i className="fas fa-pencil-alt"></i>
-            <h3>Content Creation</h3>
-            <p>Designing assistants for writing, editing, and creative content generation</p>
-          </div>
-          <div className="expertise-item">
-            <i className="fas fa-brain"></i>
-            <h3>Prompt Engineering</h3>
-            <p>Crafting sophisticated prompts to optimize AI model outputs</p>
-          </div>
+          {user.expertise && user.expertise.map(expertise => (
+            <div key={expertise} className="expertise-item">
+              <i className="fas fa-chart-bar"></i>
+              <h3>{expertise}</h3>
+              <p>{expertise} expertise</p>
+            </div>
+          ))}
         </div>
       </div>
 
       <div className="profile-about-section">
         <h2>Achievements</h2>
         <ul className="profile-achievements-list">
-          <li className="achievement-item">
-            <span className="achievement-year">2023</span>
-            <div className="achievement-content">
-              <h3>AI Creator of the Year</h3>
-              <p>Awarded by AI Innovators Association for contributions to accessible AI tools</p>
-            </div>
-          </li>
-          <li className="achievement-item">
-            <span className="achievement-year">2022</span>
-            <div className="achievement-content">
-              <h3>Top Selling Agent Creator</h3>
-              <p>Recognized for developing the most successful data analysis agents on the platform</p>
-            </div>
-          </li>
-          <li className="achievement-item">
-            <span className="achievement-year">2021</span>
-            <div className="achievement-content">
-              <h3>Research Publication</h3>
-              <p>Published groundbreaking paper on "Adaptive Prompt Engineering" in top AI journals</p>
-            </div>
-          </li>
+          {user.achievements && user.achievements.map(achievement => (
+            <li key={achievement} className="achievement-item">
+              <span className="achievement-year">{achievement.year}</span>
+              <div className="achievement-content">
+                <h3>{achievement.title}</h3>
+                <p>{achievement.description}</p>
+              </div>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
@@ -337,7 +236,7 @@ const ProfilePage = () => {
           <div className="profile-actions">
             <div className="profile-stats">
               <div className="stat-item">
-                <span className="stat-value">{user.stats.createdAgents}</span>
+                <span className="stat-value">{agents.length}</span>
                 <span className="stat-label">Agents</span>
               </div>
               <div className="stat-item">

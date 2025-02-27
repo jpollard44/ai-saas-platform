@@ -167,7 +167,7 @@ const DashboardPage = () => {
         <section className="dashboard-quick-actions">
           <h2>Quick Actions</h2>
           <div className="action-buttons">
-            <Link to="/create-agent" className="action-button">
+            <Link to="/agents/create" className="action-button">
               <span className="action-icon">+</span>
               <span>Create Agent</span>
             </Link>
@@ -175,7 +175,7 @@ const DashboardPage = () => {
               <span className="action-icon">🛒</span>
               <span>Browse Marketplace</span>
             </Link>
-            <Link to="/documentation" className="action-button">
+            <Link to="/settings" className="action-button">
               <span className="action-icon">📚</span>
               <span>Documentation</span>
             </Link>
@@ -190,13 +190,13 @@ const DashboardPage = () => {
         <section className="dashboard-agents">
           <div className="section-header">
             <h2>My Agents</h2>
-            <Link to="/create-agent" className="btn btn-primary">Create New Agent</Link>
+            <Link to="/agents/create" className="btn btn-primary">Create New Agent</Link>
           </div>
           
           {agents.length === 0 ? (
             <div className="empty-state">
               <p>You haven't created any agents yet.</p>
-              <Link to="/create-agent" className="btn btn-secondary">Create Your First Agent</Link>
+              <Link to="/agents/create" className="btn btn-secondary">Create Your First Agent</Link>
             </div>
           ) : (
             <div className="agent-cards">
