@@ -61,22 +61,34 @@ const CreateAgentPage = () => {
   const [submitError, setSubmitError] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (name.startsWith('pricing.')) {
-      const pricingField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        pricing: {
-          ...prev.pricing,
-          [pricingField]: type === 'checkbox' ? checked : value
+    try {
+      const { name, value, type, checked } = e.target;
+      
+      console.log(`Field changed: ${name}, Value: ${type === 'checkbox' ? checked : value}`);
+      
+      if (name.startsWith('pricing.')) {
+        const pricingField = name.split('.')[1];
+        setFormData(prev => ({
+          ...prev,
+          pricing: {
+            ...prev.pricing,
+            [pricingField]: type === 'checkbox' ? checked : value
+          }
+        }));
+      } else {
+        // Special handling for instructions to ensure it's never undefined
+        if (name === 'instructions') {
+          console.log(`Setting instructions field to: "${value}"`);
+          console.log(`Instructions length: ${value ? value.length : 0}`);
         }
-      }));
-    } else {
-      setFormData({
-        ...formData,
-        [name]: type === 'checkbox' ? checked : value
-      });
+        
+        setFormData(prevData => ({
+          ...prevData,
+          [name]: type === 'checkbox' ? checked : value
+        }));
+      }
+    } catch (error) {
+      console.error('Error in handleChange:', error);
     }
   };
 
@@ -105,15 +117,34 @@ const CreateAgentPage = () => {
   };
 
   const nextStep = () => {
-    // If we're on the last step, don't proceed to a non-existent step
-    if (currentStep >= 5) {
-      console.log('Already on the last step, not proceeding further');
-      return;
+    try {
+      // If we're on the last step, don't proceed to a non-existent step
+      if (currentStep >= 5) {
+        console.log('Already on the last step, not proceeding further');
+        return;
+      }
+      
+      // Validate current step before proceeding
+      const isValid = validateStep();
+      console.log(`Step ${currentStep} validation result: ${isValid}`);
+      
+      if (!isValid) {
+        console.log(`Cannot proceed from step ${currentStep} due to validation failure`);
+        toast.error('Please fill in all required fields before proceeding.');
+        return;
+      }
+      
+      // Log the current state for debugging
+      console.log('Current form data:', JSON.stringify(formData));
+      
+      // Proceed to next step
+      console.log(`Moving from step ${currentStep} to step ${currentStep + 1}`);
+      setCurrentStep(prevStep => prevStep + 1);
+      window.scrollTo(0, 0);
+    } catch (error) {
+      console.error('Error in nextStep function:', error);
+      toast.error('An error occurred while navigating to the next step.');
     }
-    
-    console.log(`Moving from step ${currentStep} to step ${currentStep + 1}`);
-    setCurrentStep(currentStep + 1);
-    window.scrollTo(0, 0);
   };
 
   const prevStep = () => {
@@ -192,18 +223,22 @@ const CreateAgentPage = () => {
         case 1:
           const isStep1Valid = formData.name.trim() !== '' && formData.description.trim() !== '';
           console.log(`Step 1 validation: ${isStep1Valid ? 'VALID' : 'INVALID'}`);
+          console.log(`Name: "${formData.name}", Description: "${formData.description}"`);
           return isStep1Valid;
         case 2:
           const isStep2Valid = formData.templateId !== '';
           console.log(`Step 2 validation: ${isStep2Valid ? 'VALID' : 'INVALID'}`);
+          console.log(`Template ID: "${formData.templateId}"`);
           return isStep2Valid;
         case 3:
           const isStep3Valid = formData.modelId !== '';
           console.log(`Step 3 validation: ${isStep3Valid ? 'VALID' : 'INVALID'}`);
+          console.log(`Model ID: "${formData.modelId}"`);
           return isStep3Valid;
         case 4:
-          const isStep4Valid = formData.instructions.trim() !== '';
+          const isStep4Valid = formData.instructions && formData.instructions.trim() !== '';
           console.log(`Step 4 validation: ${isStep4Valid ? 'VALID' : 'INVALID'}`);
+          console.log(`Instructions length: ${formData.instructions ? formData.instructions.length : 0}`);
           return isStep4Valid;
         case 5:
           // Step 5 is always valid as it's just settings
