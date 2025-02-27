@@ -383,15 +383,23 @@ exports.runAgent = async (req, res, next) => {
 // @access  Private
 exports.getUserAgents = async (req, res, next) => {
   try {
+    console.log('Getting agents for user:', req.user.id);
+    
     const agents = await Agent.find({ userId: req.user.id });
-
+    
+    console.log(`Found ${agents.length} agents for user ${req.user.id}`);
+    
     res.status(200).json({
       success: true,
       count: agents.length,
       data: agents
     });
   } catch (err) {
-    next(err);
+    console.error('Error in getUserAgents:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'Server Error'
+    });
   }
 };
 
