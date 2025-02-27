@@ -44,7 +44,8 @@ if (process.env.NODE_ENV === 'development') {
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true
 }));
 
 console.log('CORS enabled for all origins (debugging mode)');
@@ -52,18 +53,12 @@ console.log('CORS enabled for all origins (debugging mode)');
 // Add OPTIONS handling for preflight requests
 app.options('*', cors());
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  console.log('Headers:', JSON.stringify(req.headers));
-  next();
-});
-
 // Add explicit CORS headers for all responses
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -71,6 +66,13 @@ app.use((req, res, next) => {
     return res.status(200).end();
   }
   
+  next();
+});
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', JSON.stringify(req.headers));
   next();
 });
 

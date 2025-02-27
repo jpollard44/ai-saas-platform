@@ -15,16 +15,21 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// CORS options for specific routes
+// CORS options for all routes
 const corsOptions = {
   origin: '*',
-  methods: ['POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
+// Apply CORS to all routes
+router.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests for all routes
+router.options('*', cors(corsOptions));
+
 // Protected routes
-router.options('/create', cors(corsOptions)); // Handle preflight for create
-router.post('/create', cors(corsOptions), protect, createAgent);
+router.post('/create', protect, createAgent);
 router.get('/', protect, getUserAgents);
 router.get('/:agentId', protect, getAgentDetails);
 router.put('/:agentId', protect, updateAgent);

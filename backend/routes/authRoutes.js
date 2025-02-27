@@ -1,6 +1,20 @@
 const express = require('express');
+const cors = require('cors');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
+
+// CORS options for all routes
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+// Apply CORS to all routes
+router.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests for all routes
+router.options('*', cors(corsOptions));
 
 // Mock auth controller functions
 // In a real app, you would import actual controller functions
