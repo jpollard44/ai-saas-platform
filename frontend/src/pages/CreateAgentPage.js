@@ -161,24 +161,12 @@ const CreateAgentPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    // Prevent the default form submission behavior
-    e.preventDefault();
-    
-    // Check if the form was submitted by clicking the Create Agent button
-    // This helps prevent automatic form submissions
-    const submitter = e.nativeEvent.submitter;
-    const isCreateAgentButton = submitter && submitter.innerText === 'Create Agent';
-    
-    // Log submission details
-    console.log('Form submission event detected');
-    console.log('Submission source:', submitter ? submitter.innerText : 'Unknown');
-    
-    // Only proceed if this is an intentional submission via the Create Agent button
-    // or if we're in a test environment where submitter might not be available
-    if (!isCreateAgentButton && submitter !== null) {
-      console.log('Ignoring form submission not from Create Agent button');
-      return;
+    // If an event is passed, prevent default behavior
+    if (e && e.preventDefault) {
+      e.preventDefault();
     }
+    
+    console.log('Create Agent button clicked');
     
     if (isSubmitting) {
       console.log('Already submitting, ignoring duplicate submission');
@@ -308,7 +296,8 @@ const CreateAgentPage = () => {
       </div>
 
       <div className="create-agent-content">
-        <form onSubmit={handleSubmit} noValidate>
+        {/* Use onSubmit={e => e.preventDefault()} to completely prevent form submission */}
+        <form onSubmit={e => e.preventDefault()} noValidate>
           {/* Step 1: Basic Information */}
           {currentStep === 1 && (
             <div className="form-step">
@@ -677,8 +666,9 @@ const CreateAgentPage = () => {
               </button>
             ) : (
               <button 
-                type="submit" 
+                type="button" 
                 className="btn btn-primary" 
+                onClick={handleSubmit}
                 disabled={isSubmitting}
                 id="create-agent-button"
                 name="create-agent-button"
