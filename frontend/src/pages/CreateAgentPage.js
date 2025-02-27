@@ -200,53 +200,29 @@ const CreateAgentPage = () => {
         
         try {
           const response = await agentService.createAgent(updatedFormData);
-          
+            
           console.log('Agent creation response:', response);
-          
+          console.log('Response data:', response.data);
+          console.log('Response status:', response.status);
+            
           // Handle the response
-          if (response && response.data) {
-            if (response.data.success) {
-              toast.success('Agent created successfully!');
-              
-              // Check if data and _id exist before navigating
-              if (response.data.data && response.data.data._id) {
-                console.log('Navigating to agent details page:', response.data.data._id);
-                // Use setTimeout to ensure the navigation happens after the current execution context
-                setTimeout(() => {
-                  if (isMounted.current) {
-                    console.log('Component is still mounted, navigating to agent details page');
-                    navigate(`/agents/${response.data.data._id}`);
-                  } else {
-                    console.log('Component unmounted, skipping navigation');
-                  }
-                }, 100);
-              } else {
-                // If _id is missing, navigate to the agents list
-                console.log('Agent ID not found in response, navigating to agents list');
-                toast.info('Agent created but details not available. Redirecting to agents list.');
-                // Use setTimeout to ensure the navigation happens after the current execution context
-                setTimeout(() => {
-                  if (isMounted.current) {
-                    console.log('Component is still mounted, navigating to agents list');
-                    navigate('/agents');
-                  } else {
-                    console.log('Component unmounted, skipping navigation');
-                  }
-                }, 100);
-              }
-            } else {
-              // Handle error in response
-              console.error('Error in response:', response.data.error);
+          if (response && response.status >= 200 && response.status < 300) {
+            toast.success('Agent created successfully!');
+            
+            // Navigate to agents list after successful creation
+            setTimeout(() => {
               if (isMounted.current) {
-                toast.error(response.data.error || 'Failed to create agent');
-                setIsSubmitting(false);
+                console.log('Component is still mounted, navigating to agents list');
+                navigate('/agents');
+              } else {
+                console.log('Component unmounted, skipping navigation');
               }
-            }
+            }, 100);
           } else {
-            // Handle empty response
-            console.error('Empty response received');
+            // Handle error in response
+            console.error('Error in response:', response.data?.error);
             if (isMounted.current) {
-              toast.error('No response received from server');
+              toast.error(response.data?.error || 'Failed to create agent');
               setIsSubmitting(false);
             }
           }
