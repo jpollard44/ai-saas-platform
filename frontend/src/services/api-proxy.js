@@ -100,7 +100,18 @@ export const userService = {
 
 // Agent API services
 export const agentService = {
-  createAgent: (agentData) => api.post('/agents', agentData),
+  createAgent: (agentData) => {
+    console.log('Creating agent with data via proxy:', JSON.stringify(agentData));
+    return api.post('/agents/create', agentData)
+      .then(response => {
+        console.log('Agent creation successful via proxy:', JSON.stringify(response.data));
+        return response;
+      })
+      .catch(error => {
+        console.error('Agent creation failed via proxy:', error);
+        throw error;
+      });
+  },
   getAgents: () => api.get('/agents'),
   getAgent: (agentId) => api.get(`/agents/${agentId}`),
   updateAgent: (agentId, agentData) => api.put(`/agents/${agentId}`, agentData),

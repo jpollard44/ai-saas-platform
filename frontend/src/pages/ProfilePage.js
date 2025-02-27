@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { userService, agentService } from '../services/api';
+import { userService, agentService } from '../services/api-proxy';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -14,33 +14,44 @@ const ProfilePage = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const { currentUser, updateUser } = useAuth();
 
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Fetch user profile data
-        const userResponse = await userService.getUserProfile(username);
-        if (userResponse.data && userResponse.data.success) {
-          setUser(userResponse.data.data);
-        } else {
-          setError('Failed to load profile data');
-        }
-        
-        // Fetch user's agents
-        const agentsResponse = await agentService.getAgents(username);
-        if (agentsResponse.data && agentsResponse.data.success) {
-          setAgents(agentsResponse.data.data || []);
-        } else {
-          setError('Failed to load agents');
-        }
-      } catch (error) {
-        setError('Error fetching profile data');
-      } finally {
-        setIsLoading(false);
+  const fetchProfileData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch user profile data
+      const userResponse = await userService.getProfile(username);
+      if (userResponse.data && userResponse.data.success) {
+        setUser(userResponse.data.data);
+      } else {
+        setError('Failed to load profile data');
       }
-    };
+      
+      // Fetch user's agents
+      const agentsResponse = await agentService.getAgents(username);
+      if (agentsResponse.data && agentsResponse.data.success) {
+        setAgents(agentsResponse.data.data || []);
+      } else {
+        setError('Failed to load agents');
+      }
+    } catch (error) {
+      console.error('Profile error details:', error);
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        setError(`Error ${error.response.status}: ${error.response.data.message || 'Error fetching profile data'}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        setError('No response from server. Please check your connection.');
+      } else {
+        // Something happened in setting up the request
+        setError(`Error: ${error.message}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProfileData();
   }, [username]);
 
@@ -58,7 +69,16 @@ const ProfilePage = () => {
       <div className="profile-error">
         <h2>Error Loading Profile</h2>
         <p>{error}</p>
-        <button className="btn btn-primary">Try Again</button>
+        <button 
+          className="retry-button" 
+          onClick={() => {
+            setError(null);
+            setIsLoading(true);
+            fetchProfileData();
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
