@@ -19,7 +19,7 @@ const MarketplacePage = () => {
         setLoading(true);
         
         // Fetch agents from API
-        const agentsResponse = await marketplaceService.getMarketplaceListings();
+        const agentsResponse = await marketplaceService.getListings();
         
         if (agentsResponse.data && agentsResponse.data.success) {
           const fetchedAgents = agentsResponse.data.data || [];
@@ -62,7 +62,7 @@ const MarketplacePage = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(agent => 
-        agent.name?.toLowerCase().includes(query) || 
+        agent.title?.toLowerCase().includes(query) || 
         agent.description?.toLowerCase().includes(query)
       );
     }
@@ -76,12 +76,12 @@ const MarketplacePage = () => {
         result.sort((a, b) => (b.pricing.amount || 0) - (a.pricing.amount || 0));
         break;
       case 'newest':
-        result.sort((a, b) => new Date(b.id || 0) - new Date(a.id || 0));
+        result.sort((a, b) => new Date(b._id || 0) - new Date(a._id || 0));
         break;
       case 'popular':
       default:
-        result.sort((a, b) => ((b.rating || 0) * (b.reviewCount || 0)) - 
-                             ((a.rating || 0) * (a.reviewCount || 0)));
+        result.sort((a, b) => ((b.rating.average || 0) * (b.rating.count || 0)) - 
+                             ((a.rating.average || 0) * (a.rating.count || 0)));
         break;
     }
     
@@ -171,9 +171,9 @@ const MarketplacePage = () => {
             </div>
           ) : (
             filteredAgents.map(agent => (
-              <div key={agent.id} className="agent-card">
+              <div key={agent._id} className="agent-card">
                 <div className="agent-card-header">
-                  <h3>{agent.name}</h3>
+                  <h3>{agent.title}</h3>
                   {agent.pricing.type === 'free' ? (
                     <span className="price-tag free">Free</span>
                   ) : agent.pricing.type === 'one-time' ? (
@@ -191,13 +191,13 @@ const MarketplacePage = () => {
                   <span className="category-badge">{agent.category}</span>
                   {agent.rating && (
                     <div className="rating">
-                      <span className="stars">{'★'.repeat(Math.round(agent.rating))}{'☆'.repeat(5 - Math.round(agent.rating))}</span>
-                      <span className="count">({agent.reviewCount})</span>
+                      <span className="stars">{'★'.repeat(Math.round(agent.rating.average))}{'☆'.repeat(5 - Math.round(agent.rating.average))}</span>
+                      <span className="count">({agent.rating.count})</span>
                     </div>
                   )}
                 </div>
                 
-                <Link to={`/marketplace/${agent.id}`} className="btn btn-primary">
+                <Link to={`/marketplace/${agent._id}`} className="btn btn-primary">
                   View Details
                 </Link>
               </div>

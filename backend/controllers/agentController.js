@@ -77,7 +77,13 @@ exports.createAgent = async (req, res, next) => {
     if (enableWebSearch !== undefined) agentData.enableWebSearch = enableWebSearch;
     if (enableKnowledgeBase !== undefined) agentData.enableKnowledgeBase = enableKnowledgeBase;
     if (enableMemory !== undefined) agentData.enableMemory = enableMemory;
-    if (visibility) agentData.visibility = visibility;
+    
+    // Set visibility with validation
+    if (visibility && ['private', 'public', 'marketplace'].includes(visibility)) {
+      agentData.visibility = visibility;
+    } else {
+      agentData.visibility = 'private'; // Default to private if not specified or invalid
+    }
 
     // Create new agent
     const agent = await Agent.create(agentData);

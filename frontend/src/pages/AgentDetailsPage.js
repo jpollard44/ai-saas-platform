@@ -18,7 +18,7 @@ const AgentDetailsPage = () => {
     const fetchAgentDetails = async () => {
       try {
         setLoading(true);
-        const response = await agentService.getAgentById(id);
+        const response = await agentService.getAgent(id);
         
         if (response.data && response.data.success) {
           setAgent(response.data.data);

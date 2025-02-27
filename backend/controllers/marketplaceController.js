@@ -63,8 +63,9 @@ exports.listAgent = async (req, res, next) => {
       tags: tags || []
     });
 
-    // Update agent as published
+    // Update agent as published and set visibility to marketplace
     agent.isPublished = true;
+    agent.visibility = 'marketplace';
     await agent.save();
 
     res.status(201).json({
